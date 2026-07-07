@@ -37,4 +37,5 @@ Save per `~/Dev/notes/_saving.md` — **read it**; it's the source of truth
 for path, frontmatter, HEAD update, and wikilinks. This one:
 `artifact: handoff`, file `<project>/<YYYY-MM-DD>-<topic>-handoff.md`,
 `repo`/`repo_path` from cwd, add `git_branch`. Close by updating
-`<project>/HEAD.md` and offering to commit.
+`<project>/HEAD.md` and offering to commit. If the session yielded a durable,
+transferable lesson, run the valve (`_conventions.md` §4).

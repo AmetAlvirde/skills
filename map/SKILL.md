@@ -31,4 +31,5 @@ Save per `~/Dev/notes/_saving.md` — **read it**; source of truth for path,
 frontmatter, HEAD update, and wikilinks. This one: `artifact: map`, file
 `<project>/<YYYY-MM-DD>-<topic>-map.md`, `repo`/`repo_path` from cwd; start the
 increment `id` here (later grills/PRDs reuse it). Close by updating
-`<project>/HEAD.md` and offering to commit.
+`<project>/HEAD.md` and offering to commit. If a durable, transferable insight
+surfaced, run the valve (`_conventions.md` §4).

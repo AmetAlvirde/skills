@@ -45,4 +45,5 @@ frontmatter, HEAD update, and wikilinks. This one: `artifact: grill`,
 file `<project>/<YYYY-MM-DD>-<topic>-grill.md`, `repo`/`repo_path` from cwd;
 reuse the source map's `id` and `[[link]]` it, and match existing grills' style
 in the project folder. Close by updating `<project>/HEAD.md` and offering to
-commit.
+commit. If a decision rationale here would repeat on another project, run the
+valve (`_conventions.md` §4).
