@@ -27,8 +27,8 @@ A map is a scaffold for thinking, not the thinking itself — breadth over depth
 
 ## Filing
 
-Save per `~/Dev/notes/_conventions.md` — **read it**; source of truth for path,
-frontmatter, HEAD update, wikilinks, and the valve. This one: `artifact: map`, file
+Save per `~/Dev/notes/_saving.md` — **read it**; source of truth for path,
+frontmatter, HEAD update, and wikilinks. This one: `artifact: map`, file
 `<project>/<YYYY-MM-DD>-<topic>-map.md`, `repo`/`repo_path` from cwd; start the
 increment `id` here (later grills/PRDs reuse it). Close by updating
 `<project>/HEAD.md` and offering to commit.

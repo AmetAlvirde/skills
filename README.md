@@ -15,7 +15,7 @@ directory with a `SKILL.md` (YAML frontmatter + instructions).
 
 `map` and `grill` are complements: map lays out the branches; grill walks down one
 and converges. All three write markdown artifacts into `~/Dev/notes` following that
-vault's `_conventions.md`.
+vault's `_saving.md`.
 
 ## How they're wired
 
