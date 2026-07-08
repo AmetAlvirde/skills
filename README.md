@@ -1,42 +1,57 @@
 # skills
 
-Personal, tool-agnostic agent skills — the source of truth. Each skill is a
-directory with a `SKILL.md` (YAML frontmatter + instructions).
+Personal, tool-agnostic agent skills — the single source of truth. Layered:
+`global/` primitives everywhere, `engineering/` dev-flow skills per-repo, and
+`agents/` personas. See [`CLAUDE.md`](./CLAUDE.md) for the architecture, the
+invocation taxonomy, and the router invariant.
 
-## Skills
+## Layout
 
-- **handoff** — close a context window into a handoff artifact so a fresh agent
-  resumes with zero prior context.
-- **map** — turn a raw idea into a structured map of everything to consider
-  (branches, decisions, dependencies, unknowns) before planning. Breadth pass.
-- **grill** — scrutinize an idea or one branch of a map until shared
-  understanding, resolving decision dependencies one numbered question at a time,
-  each with a recommendation. Depth / convergence pass.
+- **`global/`** — `map`, `grill`, `handoff`, `writing-great-skills`,
+  `register-project`. Symlinked into `~/.claude/skills/`; apply in every repo.
+- **`engineering/`** — the dev-flow composition layer (`codebase-grill`, `spec`,
+  … more per the map). **Project-scoped**: linked into a repo only when it opts
+  in via `register-project`.
+- **`agents/`** — personas (`@ennio`, `@bit`, `@tux`, `@linn`). Symlinked into
+  `~/.claude/agents/`.
 
-`map` and `grill` are complements: map lays out the branches; grill walks down one
-and converges. All three write markdown artifacts into `~/Dev/notes` following that
-vault's `_saving.md`.
+`map` and `grill` are complements (diverge / converge); `writing-great-skills`
+governs how every skill here is authored. All three write markdown artifacts into
+`~/Dev/notes` following that vault's `_saving.md`.
 
 ## How they're wired
 
-This repo is the source of truth. Skills are exposed to tools via a two-hop
-symlink chain:
+Skills reach the tool via **direct, gitignored symlinks** — one hop, no
+intermediate `~/.agents/skills` staging directory.
 
 ```
-~/Dev/skills/<skill>/SKILL.md     ← source (this repo)
+~/Dev/skills/global/<skill>/SKILL.md   ← source (this repo)
   ↑ symlink
-~/.agents/skills/<skill>          ← tool-agnostic location (shareable across tools)
+~/.claude/skills/<skill>               ← where Claude Code discovers it (everywhere)
+
+~/Dev/skills/engineering/<skill>       ← source (this repo)
+  ↑ symlink (per-skill, opt-in per repo)
+<repo>/.claude/skills/<skill>          ← discovered only when that repo is cwd
+
+~/Dev/skills/agents/<agent>.md         ← source (this repo)
   ↑ symlink
-~/.claude/skills/<skill>          ← where Claude Code discovers them
+~/.claude/agents/<agent>.md            ← persona, available everywhere
 ```
 
-To re-create the links (idempotent):
+`register-project` creates and maintains these links. To (re)link the globals and
+agents by hand (idempotent):
 
 ```sh
-for s in handoff map grill; do
-  ln -sfn "$HOME/Dev/skills/$s"        "$HOME/.agents/skills/$s"
-  ln -sfn "../../.agents/skills/$s"    "$HOME/.claude/skills/$s"
+for s in "$HOME"/Dev/skills/global/*/; do
+  ln -sfn "$s" "$HOME/.claude/skills/$(basename "$s")"
+done
+for a in "$HOME"/Dev/skills/agents/*.md; do
+  ln -sfn "$a" "$HOME/.claude/agents/$(basename "$a")"
 done
 ```
+
+To wire a repo to the `engineering/` skills, run `register-project` from that
+repo's root — it creates per-skill symlinks into `<repo>/.claude/skills/` and
+gitignores them.
 
 Editing a `SKILL.md` here updates the skill everywhere immediately — no copy step.
