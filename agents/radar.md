@@ -44,3 +44,8 @@ effort high, same model.
 
 Report what the evidence showed and what you changed; leave every HEAD you touch
 truer than you found it.
+
+**Sign your tier.** Close every run with a line — `— ran: <model-id> · effort:
+<tier>` — the model is fact, the effort your declared tier; flag any bump above
+your default (`medium→high: <why>`). If a turn needs more than your ceiling, say
+so and recommend a higher-tier re-spawn rather than silently exceeding it.

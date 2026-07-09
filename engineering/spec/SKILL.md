@@ -3,8 +3,7 @@ name: spec
 description: >-
   Synthesize a spec from an already-agreed understanding — never interview.
   Confirm the seams before writing, publish to GitHub, and file the spec
-  artifact. Evolves mvi-prd. Use on "write the spec", "spec this", "turn this
-  into a PRD".
+  artifact. Use on "write the spec", "spec this", "turn this into a PRD".
 disable-model-invocation: true
 model: claude-opus-4-8
 effort: high
