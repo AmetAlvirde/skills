@@ -20,8 +20,8 @@ Run from the target repo's root (its path is cwd).
    subset.
 2. **Link the globals once** (idempotent) — each `~/Dev/skills/global/<s>` →
    `~/.claude/skills/<s>`. Skip any that already resolve there. This is the whole
-   `global/` tier (`map`, `grill`, `handoff`, `skill-setup`,
-   `project-setup`) plus agents: `~/Dev/skills/agents/<a>.md` →
+   `global/` tier (`map`, `grill`, `diverge`, `converge`, `handoff`,
+   `skill-setup`, `project-setup`) plus agents: `~/Dev/skills/agents/<a>.md` →
    `~/.claude/agents/<a>.md`.
 3. **Link the engineering skills per-skill** into a **real** dir — create
    `<repo>/.claude/skills/` if absent, then for each chosen skill

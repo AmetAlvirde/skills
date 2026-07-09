@@ -20,7 +20,8 @@ Run at Opus 4.8 high; raise `effort` to xhigh only when the synthesis fights bac
    grills (resolve them through `HEAD.md`); do not re-open settled decisions.
 2. **Confirm the seams before writing** — name the boundaries the build will cut
    along (modules, contracts, tracer-bullet slices). If a seam is still fuzzy,
-   compose `grill` on that one seam; otherwise state each seam and get a nod.
+   compose `converge` on that one seam — lens: a weak joint is a boundary the
+   build can't cut along; otherwise state each seam and get a nod.
 3. **Write the spec** — problem, the confirmed seams, slices, and the verifiable
    success signal. No interview transcript; the spec is the synthesis.
 4. **Publish** — push to GitHub as the durable home (via @tux for any git/PR

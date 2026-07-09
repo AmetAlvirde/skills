@@ -10,30 +10,12 @@ description: >-
 
 # map
 
-Expand an idea into the **territory to consider** before any plan, PRD, or
-strategy. This is the breadth move — surface, don't resolve (resolving is
-`grill`).
+The general front door to divergence: any raw idea, no preloaded context.
 
 1. **Restate the idea** in 1–3 sentences the user agrees with; sharpen with a
    question or two first if it's too fuzzy to restate faithfully.
-2. **Branch it** — the top-level dimensions a plan must address (scope, users,
-   domain model, constraints, dependencies, risks, sequencing, success signal…).
-   Cast wide.
-3. **Expand each branch** into its considerations and unknowns. **Number nodes
-   hierarchically** (1, 1.1, 1.2…) so any node is addressable by `grill`.
-4. **Map dependencies** — which nodes gate others; the upstream load-bearing
-   set.
-5. **Flag hotspots** — highest-uncertainty / highest-leverage nodes (grill
-   first).
-6. **Point downstream** — what this map feeds and the recommended next move.
-
-A map is a scaffold for thinking, not the thinking itself — breadth over depth.
-
-## Filing
-
-Save per `~/Dev/notes/_saving.md` — **read it**; source of truth for path,
-frontmatter, HEAD update, and wikilinks. This one: `artifact: map`, file
-`<project>/<YYYY-MM-DD>-<topic>-map.md`, `repo`/`repo_path` from cwd; start the
-increment `id` here (later grills/PRDs reuse it). Close by updating
-`<project>/HEAD.md` and offering to commit. If a durable, transferable insight
-surfaced, run the valve (`_conventions.md` §4).
+2. **Compose `diverge`** on that idea. Lens: no domain is assumed — cast wide
+   across the general dimensions (scope, users, domain model, constraints,
+   dependencies, risks, sequencing, success signal), and treat the fuzziest
+   upstream nodes as the hotspots.
+3. **Exit** — `diverge`'s downstream pointer and artifact apply unchanged.

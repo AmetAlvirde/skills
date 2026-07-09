@@ -8,9 +8,9 @@ tiering, and the **router table** live below (read on demand).
 
 ## Layout
 
-- **`global/`** — `map`, `grill`, `handoff`, `skill-setup`,
-  `project-setup`, `standup`, `hotwash`. Symlinked into `~/.claude/skills/`;
-  apply in every repo.
+- **`global/`** — `map`, `grill`, `diverge`, `converge`, `handoff`,
+  `skill-setup`, `project-setup`, `standup`, `hotwash`. Symlinked into
+  `~/.claude/skills/`; apply in every repo.
 - **`engineering/`** — the dev-flow composition layer: the increment suite
   (`prototype`, `aar`, `audit`, `spec`, `issues`, `implement`, `refactor`, `adr`,
   `codebase-grill`, `codebase-review`, `pr-review`, `review`, `update-docs`).
@@ -18,9 +18,10 @@ tiering, and the **router table** live below (read on demand).
 - **`agents/`** — personas (`@ennio`, `@bit`, `@tux`, `@linn`, `@radar`).
   Symlinked into `~/.claude/agents/`.
 
-`map` and `grill` are complements (diverge / converge); `skill-setup`
-governs how every skill here is authored. All three write markdown artifacts
-into `~/Dev/notes` following that vault's `_saving.md`.
+`map` and `grill` are complements — the general front doors to the `diverge` and
+`converge` disciplines, which own the method and the artifact. `skill-setup`
+governs how every skill here is authored. All write markdown artifacts into
+`~/Dev/notes` following that vault's `_saving.md`.
 
 ## How they're wired
 
@@ -75,8 +76,18 @@ discipline.
 
 The `global/` primitives (`map`/`grill`/`handoff`/`skill-setup`) are a
 deliberate exception: they stay **model-invoked front doors** so they trigger on
-natural language ("grill this", "map it out"). They are the shared disciplines
-the engineering orchestrators compose.
+natural language ("grill this", "map it out"). `map` and `grill` are the
+*general* front doors, thin over the `diverge` / `converge` disciplines that any
+specialized front door (`codebase-grill`, and future `<domain>-grill|map`)
+composes directly.
+
+A discipline lives at the lowest layer that covers all its consumers:
+`converge`/`diverge` in `global/` because global front doors compose them;
+`review` in `engineering/` because only engineering does.
+
+Which name a bare family word takes: the **general user entry** when one exists
+(`map`, `grill`), otherwise the **discipline** (`review` has no general front
+door, so it keeps the bare name).
 
 ## Naming
 
@@ -126,14 +137,16 @@ commit.** A router that lies is the named failure mode of this repo.
 
 | Skill                  | Layer       | Kind          | What it does                                                           |
 | ---------------------- | ----------- | ------------- | --------------------------------------------------------------------- |
-| `map`                  | global      | model-invoked | Diverge a raw idea into the territory to consider.                     |
-| `grill`                | global      | model-invoked | Converge one branch to shared understanding, one question at a time.   |
+| `map`                  | global      | model-invoked | General front door to divergence: compose `diverge` on a raw idea.     |
+| `grill`                | global      | model-invoked | General front door to convergence: compose `converge` on a subject.    |
+| `diverge`              | global      | discipline    | Shared divergence method + map artifact; composed, not run directly.   |
+| `converge`             | global      | discipline    | Shared convergence method + grill artifact; composed, not run directly.|
 | `handoff`              | global      | model-invoked | Capture working state for a zero-context successor.                    |
 | `skill-setup`          | global      | model-invoked | Author/prune skills (taxonomy, naming, failure modes).                 |
 | `project-setup`        | global      | user-invoked  | Wire a repo to consume `engineering/` skills; scaffold its vault HEAD. |
 | `standup`              | global      | user-invoked  | Log-in briefing: `@radar` refreshes `hq/SITREP.md`, opens the daylog.  |
 | `hotwash`              | global      | user-invoked  | Log-out debrief: `@radar` seals the daylog, evidence-writes to HEADs.  |
-| `codebase-grill`       | engineering | orchestrator  | Load repo context, then compose `grill` against the live code.         |
+| `codebase-grill`       | engineering | orchestrator  | Load repo context, then compose `converge` against the live code.      |
 | `prototype`            | engineering | orchestrator  | Build a throwaway prototype to learn; runs as @bit, files the note.    |
 | `aar`                  | engineering | orchestrator  | Synthesize what the prototype taught — reliable vs discard.            |
 | `audit`                | engineering | orchestrator  | Bucket the prototype→reliable assurance gap (analysis only).           |
@@ -144,7 +157,7 @@ commit.** A router that lies is the named failure mode of this repo.
 | `adr`                  | engineering | orchestrator  | Record a qualifying architecture decision in-repo; keep the index.     |
 | `codebase-review`      | engineering | orchestrator  | Compose `review` against the local working diff.                       |
 | `pr-review`            | engineering | orchestrator  | Compose `review` against a GitHub PR.                                  |
-| `review`               | engineering | discipline    | Shared code-review method; composed by the two above (model-invoked).  |
+| `review`               | engineering | discipline    | Shared code-review method; composed by the two above, never direct.    |
 | `update-docs`          | engineering | orchestrator  | Reconcile docs with the implementation; runs as @linn.                 |
 
 ## Vault
@@ -156,8 +169,6 @@ do not emit them.
 
 ## Deferred (not yet built)
 
-- Extracting a standalone model-invoked grill discipline and splitting the
-  global `grill` primitive into orchestrator + discipline. For now
-  `codebase-grill` composes the existing `grill` directly — same thesis, no
-  duplication, without destabilizing a ratified primitive. Decide with Amet
-  before splitting.
+- Specialized `<domain>-grill` / `<domain>-map` front doors (e.g. a
+  `positions-grill` hunting cohesive market positioning). The seam is built —
+  each is `{preload context} + {domain lens} → compose converge|diverge`.
