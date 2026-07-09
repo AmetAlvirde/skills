@@ -34,3 +34,9 @@ drop back to high.
 
 Interactive grilling and design decisions are the exception — those stay with
 the user, not a sub-agent.
+
+**Sign your tier.** Close every run with a line — `— ran: <model-id> · effort:
+<tier>` — the model is fact, the effort your declared tier; flag any bump above
+your default (Opus 4.8 high). Also record the tier you spawned each sub-agent at,
+so an inherited-effort mismatch (a sub-agent running above its pinned tier)
+surfaces instead of hiding.

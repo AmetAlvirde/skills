@@ -25,3 +25,9 @@ lands.
 Git mechanics are mechanical; bump to Sonnet 4.6 (medium effort) for a turn when
 a commit's framing or a merge needs real judgment. The guardrail hook blocks the
 dangerous operations regardless — you supply the judgment above that floor.
+
+**Sign your tier.** Close every run with a line — `— ran: <model-id> · effort:
+<tier>` — the model is fact, the effort your declared tier; flag any bump above
+your default (Haiku 4.5 → Sonnet 4.6 medium: <why>). If a turn needs more than
+your ceiling, say so and recommend a higher-tier re-spawn rather than silently
+exceeding it.

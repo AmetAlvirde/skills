@@ -11,9 +11,10 @@ tiering, and the **router table** live below (read on demand).
 - **`global/`** — `map`, `grill`, `handoff`, `skill-setup`,
   `project-setup`, `standup`, `hotwash`. Symlinked into `~/.claude/skills/`;
   apply in every repo.
-- **`engineering/`** — the dev-flow composition layer (`codebase-grill`, `spec`,
-  … more per the map). **Project-scoped**: linked into a repo only when it opts
-  in via `project-setup`.
+- **`engineering/`** — the dev-flow composition layer: the increment suite
+  (`prototype`, `aar`, `audit`, `spec`, `issues`, `implement`, `refactor`, `adr`,
+  `codebase-grill`, `codebase-review`, `pr-review`, `review`, `update-docs`).
+  **Project-scoped**: linked into a repo only when it opts in via `project-setup`.
 - **`agents/`** — personas (`@ennio`, `@bit`, `@tux`, `@linn`, `@radar`).
   Symlinked into `~/.claude/agents/`.
 
@@ -102,8 +103,20 @@ Agent tiers (default → escalation when a turn is genuinely stuck):
 | `@linn`  | docs / vault        | Sonnet 4.6 med   | Opus 4.8 high   |
 | `@radar` | state / briefings   | Opus 4.8 medium  | Opus 4.8 high   |
 
-Single-turn skills self-tier: `codebase-grill` = Opus 4.8 high; `spec` = Opus
-4.8 high (→ xhigh when the synthesis fights back).
+Single-turn skills self-tier: `codebase-grill`, `spec`, `audit`, `refactor`,
+`adr`, `issues`, `codebase-review`, `pr-review` = Opus 4.8 high (`spec` → xhigh
+when the synthesis fights back); `aar` = Opus 4.8 medium. Multi-turn build skills
+carry **no** skill pin — `prototype` and `implement` run as **@bit**,
+`update-docs` as **@linn**; the `review` discipline inherits the tier of the
+front door that composes it.
+
+Every agent **signs its tier**: each run closes with `— ran: <model-id> ·
+effort: <tier>`, plus any bump above its default and why. The model id is
+fact (the agent knows it); the effort is the agent's declared tier, not a
+harness-verified readout — so the sign line surfaces an inherited-effort
+mismatch (a sub-agent running above its pinned tier) instead of hiding it. An
+agent that needs more than its ceiling flags it for a higher-tier re-spawn
+rather than silently exceeding it.
 
 ## Router
 
@@ -121,7 +134,18 @@ commit.** A router that lies is the named failure mode of this repo.
 | `standup`              | global      | user-invoked  | Log-in briefing: `@radar` refreshes `hq/SITREP.md`, opens the daylog.  |
 | `hotwash`              | global      | user-invoked  | Log-out debrief: `@radar` seals the daylog, evidence-writes to HEADs.  |
 | `codebase-grill`       | engineering | orchestrator  | Load repo context, then compose `grill` against the live code.         |
+| `prototype`            | engineering | orchestrator  | Build a throwaway prototype to learn; runs as @bit, files the note.    |
+| `aar`                  | engineering | orchestrator  | Synthesize what the prototype taught — reliable vs discard.            |
+| `audit`                | engineering | orchestrator  | Bucket the prototype→reliable assurance gap (analysis only).           |
 | `spec`                 | engineering | orchestrator  | Synthesize a spec from an agreed understanding; publish + file.        |
+| `issues`               | engineering | orchestrator  | Decompose an approved spec into tracer-bullet slice issues.            |
+| `implement`            | engineering | orchestrator  | Build one reliable slice red→green; runs as @bit, commits via @tux.    |
+| `refactor`             | engineering | orchestrator  | Diagnose a refactor → refactor-diagnosis; build via `implement`.       |
+| `adr`                  | engineering | orchestrator  | Record a qualifying architecture decision in-repo; keep the index.     |
+| `codebase-review`      | engineering | orchestrator  | Compose `review` against the local working diff.                       |
+| `pr-review`            | engineering | orchestrator  | Compose `review` against a GitHub PR.                                  |
+| `review`               | engineering | discipline    | Shared code-review method; composed by the two above (model-invoked).  |
+| `update-docs`          | engineering | orchestrator  | Reconcile docs with the implementation; runs as @linn.                 |
 
 ## Vault
 
@@ -137,5 +161,3 @@ do not emit them.
   `codebase-grill` composes the existing `grill` directly — same thesis, no
   duplication, without destabilizing a ratified primitive. Decide with Amet
   before splitting.
-- The rest of the `engineering/` suite (prototype, refactor, audit, issues,
-  implement, aar, adr, update-docs, codebase-review, pr-review) per the map.
