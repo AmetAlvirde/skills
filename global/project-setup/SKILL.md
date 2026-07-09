@@ -1,14 +1,14 @@
 ---
-name: register-project
+name: project-setup
 description: >-
   Wire a repo to consume the engineering skill set from ~/Dev/skills — create
   gitignored per-skill symlinks into the repo's real .claude/skills/, ensure the
-  global primitives are linked, and scaffold the vault project. Use on "register
-  this project", "wire up skills here", or when a repo should get the dev-flow
-  skills. Idempotent.
+  global primitives are linked, and scaffold the vault project. Use on "set up
+  this project", "register this project", "wire up skills here", or when a repo
+  should get the dev-flow skills. Idempotent.
 ---
 
-# register-project
+# project-setup
 
 Give a repo access to the `engineering/` skills without copying them — symlinks
 back to the single source of truth in `~/Dev/skills`. Idempotent: safe to re-run.
@@ -20,8 +20,8 @@ Run from the target repo's root (its path is cwd).
    subset.
 2. **Link the globals once** (idempotent) — each `~/Dev/skills/global/<s>` →
    `~/.claude/skills/<s>`. Skip any that already resolve there. This is the whole
-   `global/` tier (`map`, `grill`, `handoff`, `writing-great-skills`,
-   `register-project`) plus agents: `~/Dev/skills/agents/<a>.md` →
+   `global/` tier (`map`, `grill`, `handoff`, `skill-setup`,
+   `project-setup`) plus agents: `~/Dev/skills/agents/<a>.md` →
    `~/.claude/agents/<a>.md`.
 3. **Link the engineering skills per-skill** into a **real** dir — create
    `<repo>/.claude/skills/` if absent, then for each chosen skill

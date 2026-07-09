@@ -8,7 +8,7 @@ description: >-
   in-repo".
 disable-model-invocation: true
 model: claude-opus-4-8
-effort: xhigh
+effort: high
 ---
 
 # codebase-grill

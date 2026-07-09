@@ -1,5 +1,5 @@
 ---
-name: writing-great-skills
+name: skill-setup
 description: >-
   Author and prune agent skills so each one really communicates intent in the
   fewest tokens — invocation taxonomy, qualifier-first naming, leading words,
@@ -8,7 +8,7 @@ description: >-
   while editing, not an increment step.
 ---
 
-# writing-great-skills
+# skill-setup
 
 A skill is a lever on a model that already knows a lot. Write the smallest thing
 that changes behavior in the direction you want; delete everything the model
