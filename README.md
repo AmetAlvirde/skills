@@ -9,12 +9,13 @@ tiering, and the **router table** live below (read on demand).
 ## Layout
 
 - **`global/`** — `map`, `grill`, `handoff`, `skill-setup`,
-  `project-setup`. Symlinked into `~/.claude/skills/`; apply in every repo.
+  `project-setup`, `standup`, `hotwash`. Symlinked into `~/.claude/skills/`;
+  apply in every repo.
 - **`engineering/`** — the dev-flow composition layer (`codebase-grill`, `spec`,
   … more per the map). **Project-scoped**: linked into a repo only when it opts
   in via `project-setup`.
-- **`agents/`** — personas (`@ennio`, `@bit`, `@tux`, `@linn`). Symlinked into
-  `~/.claude/agents/`.
+- **`agents/`** — personas (`@ennio`, `@bit`, `@tux`, `@linn`, `@radar`).
+  Symlinked into `~/.claude/agents/`.
 
 `map` and `grill` are complements (diverge / converge); `skill-setup`
 governs how every skill here is authored. All three write markdown artifacts
@@ -99,6 +100,7 @@ Agent tiers (default → escalation when a turn is genuinely stuck):
 | `@bit`   | implement/refactor  | Opus 4.8 medium  | Opus 4.8 high   |
 | `@tux`   | git                 | Haiku 4.5        | Sonnet 4.6 med  |
 | `@linn`  | docs / vault        | Sonnet 4.6 med   | Opus 4.8 high   |
+| `@radar` | state / briefings   | Opus 4.8 medium  | Opus 4.8 high   |
 
 Single-turn skills self-tier: `codebase-grill` = Opus 4.8 high; `spec` = Opus
 4.8 high (→ xhigh when the synthesis fights back).
@@ -116,6 +118,8 @@ commit.** A router that lies is the named failure mode of this repo.
 | `handoff`              | global      | model-invoked | Capture working state for a zero-context successor.                    |
 | `skill-setup`          | global      | model-invoked | Author/prune skills (taxonomy, naming, failure modes).                 |
 | `project-setup`        | global      | user-invoked  | Wire a repo to consume `engineering/` skills; scaffold its vault HEAD. |
+| `standup`              | global      | user-invoked  | Log-in briefing: `@radar` refreshes `hq/SITREP.md`, opens the daylog.  |
+| `hotwash`              | global      | user-invoked  | Log-out debrief: `@radar` seals the daylog, evidence-writes to HEADs.  |
 | `codebase-grill`       | engineering | orchestrator  | Load repo context, then compose `grill` against the live code.         |
 | `spec`                 | engineering | orchestrator  | Synthesize a spec from an agreed understanding; publish + file.        |
 
