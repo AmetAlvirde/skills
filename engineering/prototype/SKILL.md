@@ -10,12 +10,12 @@ disable-model-invocation: true
 
 # prototype
 
-A throwaway build to *learn*, not to keep — the fastest honest path through the
+A throwaway build to _learn_, not to keep — the fastest honest path through the
 likely real caller, every shortcut visible. Prototype code is never trusted as
 reliable until it survives `audit` and re-implementation.
 
-Multi-turn build loop — run it as **@bit** (Opus 4.8 medium holds the tier across
-the loop); the skill sets the mode, @bit builds, @tux lands any git.
+Multi-turn build loop — run it as **@bit** (Opus 4.8 medium holds the tier
+across the loop); the skill sets the mode, @bit builds, @tux lands any git.
 
 1. **Load the target** — resolve product / glossary / ADRs and the prototype
    target through `HEAD.md` frontmatter (per `~/Dev/notes/_saving.md`) and the
@@ -27,7 +27,7 @@ the loop); the skill sets the mode, @bit builds, @tux lands any git.
    ADR contradictions, or destructive data need explicit approval. Tests only
    where they speed learning.
 3. **Verify enough to evaluate** — run the app or a cheap typecheck; prototype
-   verification proves the prototype can be *judged*, not that the increment is
+   verification proves the prototype can be _judged_, not that the increment is
    reliable.
 
 ## Filing

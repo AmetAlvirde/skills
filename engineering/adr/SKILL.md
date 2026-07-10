@@ -23,16 +23,16 @@ Run at Opus 4.8 high — the judgment is whether the decision qualifies and why.
    don't write one. Qualifying shapes: architectural form, integration patterns,
    lock-in technology choices, context ownership, deliberate deviations, non-
    obvious rejected alternatives.
-2. **Record minimally** — resolve the repo's ADR home through `HEAD.md`; read its
-   index first, open only relevant ADRs. Write: short title, provenance, scope
-   (product | context), status, and 1–3 sentences of context + decision + why.
-   Add *Considered Options* only for a rejected alternative worth remembering;
-   *Consequences* only for non-obvious downstream effects.
-3. **Maintain the index** — add / supersede / deprecate the index row in the same
-   edit. A superseded ADR points to its successor.
+2. **Record minimally** — resolve the repo's ADR home through `HEAD.md`; read
+   its index first, open only relevant ADRs. Write: short title, provenance,
+   scope (product | context), status, and 1–3 sentences of context + decision +
+   why. Add _Considered Options_ only for a rejected alternative worth
+   remembering; _Consequences_ only for non-obvious downstream effects.
+3. **Maintain the index** — add / supersede / deprecate the index row in the
+   same edit. A superseded ADR points to its successor.
 
 ## Filing
 
 ADRs are durable in-repo records — write them to the ADR home resolved through
-`HEAD.md`, not the vault. Log a one-line `decisions-log` pointer in the vault only
-if the increment tracks one. Git lands via @tux.
+`HEAD.md`, not the vault. Log a one-line `decisions-log` pointer in the vault
+only if the increment tracks one. Git lands via @tux.

@@ -13,8 +13,8 @@ effort: high
 
 A thin front door: point the `review` discipline at a GitHub PR.
 
-1. **Fetch the PR** — resolve the PR ref from the user; pull its diff, title, and
-   description via `gh` (git mechanics via @tux if needed). State the base.
+1. **Fetch the PR** — resolve the PR ref from the user; pull its diff, title,
+   and description via `gh` (git mechanics via @tux if needed). State the base.
 2. **Compose `review`** — run the `review` discipline on the PR diff at Opus 4.8
    high, reading surrounding code to ground findings.
 3. **Return findings** — most-severe first. Post as inline PR comments only on

@@ -18,8 +18,8 @@ context in hand. The point over bare `grill` is that facts are looked up in the
 code, not asked of the human.
 
 1. **Load repo context** — resolve product doc, glossary, and ADRs through the
-   project's `HEAD.md` frontmatter (per `~/Dev/notes/_saving.md`). Read enough to
-   answer factual questions yourself.
+   project's `HEAD.md` frontmatter (per `~/Dev/notes/_saving.md`). Read enough
+   to answer factual questions yourself.
 2. **Compose `converge`** on the target decision. Lens: with the codebase in
    reach, **facts → look them up** in the code and docs you just loaded;
    **decisions → always the human's**. A weak joint here is a decision that
@@ -30,6 +30,6 @@ code, not asked of the human.
 
 ## Filing
 
-`converge` writes the artifact (`artifact: grill`) per `~/Dev/notes/_saving.md` —
-read it. Reuse the increment's `id`, note that context came from the repo, and
+`converge` writes the artifact (`artifact: grill`) per `~/Dev/notes/_saving.md`
+— read it. Reuse the increment's `id`, note that context came from the repo, and
 `[[link]]` the source map. Close by updating `HEAD.md`; offer to commit.

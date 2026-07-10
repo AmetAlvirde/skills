@@ -2,9 +2,9 @@
 name: aar
 description: >-
   Synthesize what a prototype taught — separate discovered product behavior from
-  implementation accident; state what should become reliable and what to discard.
-  Use on "aar", "what did the prototype teach us", after `prototype` and before
-  `audit`. Also recovers prototype-first work that skipped the grill.
+  implementation accident; state what should become reliable and what to
+  discard. Use on "aar", "what did the prototype teach us", after `prototype`
+  and before `audit`. Also recovers prototype-first work that skipped the grill.
 disable-model-invocation: true
 model: claude-opus-4-8
 effort: medium
@@ -12,14 +12,15 @@ effort: medium
 
 # aar
 
-Synthesize the learning, don't defend the code. The prototype was a question; the
-AAR is the answer — what's validated, what becomes reliable, what to throw away.
+Synthesize the learning, don't defend the code. The prototype was a question;
+the AAR is the answer — what's validated, what becomes reliable, what to throw
+away.
 
 Run at Opus 4.8 medium — synthesis from evidence you already hold.
 
-1. **Draft from evidence first** — read the source map/grill, the prototype note,
-   and the prototype diff (resolve through `HEAD.md`). Ask focused questions only
-   for learning that's missing or contradictory.
+1. **Draft from evidence first** — read the source map/grill, the prototype
+   note, and the prototype diff (resolve through `HEAD.md`). Ask focused
+   questions only for learning that's missing or contradictory.
 2. **Separate signal from accident** — distinguish discovered product behavior
    from prototype implementation accidents. The AAR does not defend prototype
    code; it names what's worth making reliable and what to discard.
@@ -29,6 +30,6 @@ Run at Opus 4.8 medium — synthesis from evidence you already hold.
 
 ## Filing
 
-Write the `aar` artifact per `~/Dev/notes/_saving.md` — read it. `assurance:
-discovery`, reuse the increment `id`, `[[link]]` the prototype and grill. Close by
-updating `HEAD.md`. Next step is usually `audit`.
+Write the `aar` artifact per `~/Dev/notes/_saving.md` — read it.
+`assurance: discovery`, reuse the increment `id`, `[[link]]` the prototype and
+grill. Close by updating `HEAD.md`. Next step is usually `audit`.
