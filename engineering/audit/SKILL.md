@@ -8,7 +8,7 @@ description: >-
   `prototype`/`aar` and before `spec`.
 disable-model-invocation: true
 model: claude-opus-4-8
-effort: high
+effort: xhigh
 ---
 
 # audit
@@ -17,7 +17,7 @@ Analysis only — you audit the gap from *prototype* assurance to *reliable*
 assurance. You do not refactor, write tests, fix findings, create ADRs, or touch
 git state; naming the gap is the whole job.
 
-Run at Opus 4.8 high — the value is judgment about assurance and blast radius.
+Run at Opus 4.8 xhigh — the value is judgment about assurance and blast radius.
 
 1. **Name the boundary** — state the prototype source (working tree, branch, PR,
    or commit range) and the reliable baseline (default branch or merge-base)
@@ -27,6 +27,9 @@ Run at Opus 4.8 high — the value is judgment about assurance and blast radius.
 2. **Scope to the increment** — audit the changed code, the integration seams it
    touches, the tests (or missing test surfaces), and compatibility-sensitive
    behavior. Don't let out-of-scope opportunities silently expand the increment.
+   Name seam and module findings in the `design` discipline's vocabulary —
+   speak it exactly — and sweep the changed code against its smell baseline
+   (its `smells.md`).
 3. **Bucket every finding** — exactly one of: **Must fix before reliable** (blocks
    the reliable claim), **Deferred with rationale** (a scoped, accepted risk),
    **Out-of-scope opportunity** (real, but outside this boundary). Add test and
