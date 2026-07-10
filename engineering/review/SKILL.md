@@ -16,8 +16,11 @@ Find what's actually wrong, then prove it before you say it. Two lenses, always:
 **cleanup** (reuse an existing helper, simplify, drop dead work, fix altitude).
 The invoking front door sets the target and the tier.
 
-1. **Read the change in context** — the diff plus enough surrounding code to know
-   what the change is *for*. A finding you can't ground in the code is noise.
+1. **Read the change in context** — the diff plus enough surrounding code to
+   know what the change is _for_. A finding you can't ground in the code is
+   noise. For the cleanup lens, sweep the diff against the `design`
+   discipline's smell baseline (its `smells.md`) under its binding rules —
+   labelled judgment calls, repo-documented standards override.
 2. **Verify before reporting** — for each candidate, construct the concrete
    inputs/state → wrong result. If you can't, it's a hunch, not a finding; drop
    it or mark it explicitly uncertain. Default to skepticism — a plausible-but-

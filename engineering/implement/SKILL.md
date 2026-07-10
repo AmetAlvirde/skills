@@ -11,10 +11,12 @@ disable-model-invocation: true
 # implement
 
 One reliable slice at a time — not the whole spec. Reliable means tested at the
-seam and behavior-preserving everywhere else.
+seam and behavior-preserving everywhere else (seam and interface per the
+`design` discipline — the interface is the test surface).
 
 Multi-turn build loop — run it as **@bit** (Opus 4.8 medium holds the tier); the
-skill frames the slice, @bit writes red→green and runs the cadence, @tux commits.
+skill frames the slice, @bit writes red→green and runs the cadence, @tux
+commits.
 
 1. **Load the slice contract** — read the slice and its parent spec (resolve
    through `HEAD.md`); read only the relevant ADRs and the seams/tests the slice
@@ -24,8 +26,8 @@ skill frames the slice, @bit writes red→green and runs the cadence, @tux commi
    the seam; write the failing test at the pre-agreed seam, make it pass, then
    run the typecheck/test cadence. Preserve existing behavior; use the project's
    test patterns; no speculative scope.
-3. **Verify the reliable claim** — run targeted commands plus any suite the claim
-   needs; if one can't run, say why and name the residual risk.
+3. **Verify the reliable claim** — run targeted commands plus any suite the
+   claim needs; if one can't run, say why and name the residual risk.
 
 ## Filing
 

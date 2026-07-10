@@ -13,13 +13,14 @@ effort: high
 
 Synthesize, don't interview. By the time you write a spec the thinking is done
 (via `map`/`grill`); your job is to render it faithfully and confirm the seams.
-Run at Opus 4.8 high; raise `effort` to xhigh only when the synthesis fights back
-— tangled seams, a success signal that won't pin down.
+Run at Opus 4.8 high; raise `effort` to xhigh only when the synthesis fights
+back — tangled seams, a success signal that won't pin down.
 
 1. **Gather the agreed understanding** — pull from the increment's map and
    grills (resolve them through `HEAD.md`); do not re-open settled decisions.
-2. **Confirm the seams before writing** — name the boundaries the build will cut
-   along (modules, contracts, tracer-bullet slices). If a seam is still fuzzy,
+2. **Confirm the seams before writing** — name the seams the build will cut
+   along (modules, contracts, tracer-bullet slices), in the `design`
+   discipline's vocabulary. If a seam is still fuzzy,
    compose `converge` on that one seam — lens: a weak joint is a boundary the
    build can't cut along; otherwise state each seam and get a nod.
 3. **Write the spec** — problem, the confirmed seams, slices, and the verifiable

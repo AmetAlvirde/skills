@@ -13,7 +13,8 @@ tiering, and the **router table** live below (read on demand).
   `~/.claude/skills/`; apply in every repo.
 - **`engineering/`** — the dev-flow composition layer: the increment suite
   (`prototype`, `aar`, `audit`, `spec`, `issues`, `implement`, `refactor`, `adr`,
-  `codebase-grill`, `codebase-review`, `pr-review`, `review`, `update-docs`).
+  `codebase-map`, `codebase-grill`, `codebase-review`, `pr-review`, `review`,
+  `design`, `update-docs`).
   **Project-scoped**: linked into a repo only when it opts in via `project-setup`.
 - **`agents/`** — personas (`@ennio`, `@bit`, `@tux`, `@linn`, `@radar`).
   Symlinked into `~/.claude/agents/`.
@@ -78,8 +79,8 @@ The `global/` primitives (`map`/`grill`/`handoff`/`skill-setup`) are a
 deliberate exception: they stay **model-invoked front doors** so they trigger on
 natural language ("grill this", "map it out"). `map` and `grill` are the
 *general* front doors, thin over the `diverge` / `converge` disciplines that any
-specialized front door (`codebase-grill`, and future `<domain>-grill|map`)
-composes directly.
+specialized front door (`codebase-map`, `codebase-grill`, and future
+`<domain>-grill|map`) composes directly.
 
 A discipline lives at the lowest layer that covers all its consumers:
 `converge`/`diverge` in `global/` because global front doors compose them;
@@ -114,12 +115,12 @@ Agent tiers (default → escalation when a turn is genuinely stuck):
 | `@linn`  | docs / vault        | Sonnet 4.6 med   | Opus 4.8 high   |
 | `@radar` | state / briefings   | Opus 4.8 medium  | Opus 4.8 high   |
 
-Single-turn skills self-tier: `codebase-grill`, `spec`, `audit`, `refactor`,
+Single-turn skills self-tier: `codebase-map`, `codebase-grill`, `spec`, `refactor`,
 `adr`, `issues`, `codebase-review`, `pr-review` = Opus 4.8 high (`spec` → xhigh
-when the synthesis fights back); `aar` = Opus 4.8 medium. Multi-turn build skills
+when the synthesis fights back); `audit` = Opus 4.8 xhigh; `aar` = Opus 4.8 medium. Multi-turn build skills
 carry **no** skill pin — `prototype` and `implement` run as **@bit**,
-`update-docs` as **@linn**; the `review` discipline inherits the tier of the
-front door that composes it.
+`update-docs` as **@linn**; the `review` and `design` disciplines inherit the
+tier of the skill that composes them.
 
 Every agent **signs its tier**: each run closes with `— ran: <model-id> ·
 effort: <tier>`, plus any bump above its default and why. The model id is
@@ -146,6 +147,7 @@ commit.** A router that lies is the named failure mode of this repo.
 | `project-setup`        | global      | user-invoked  | Wire a repo to consume `engineering/` skills; scaffold its vault HEAD. |
 | `standup`              | global      | user-invoked  | Log-in briefing: `@radar` refreshes `hq/SITREP.md`, opens the daylog.  |
 | `hotwash`              | global      | user-invoked  | Log-out debrief: `@radar` seals the daylog, evidence-writes to HEADs.  |
+| `codebase-map`         | engineering | orchestrator  | Load repo context, then compose `diverge` with the code as the lens.   |
 | `codebase-grill`       | engineering | orchestrator  | Load repo context, then compose `converge` against the live code.      |
 | `prototype`            | engineering | orchestrator  | Build a throwaway prototype to learn; runs as @bit, files the note.    |
 | `aar`                  | engineering | orchestrator  | Synthesize what the prototype taught — reliable vs discard.            |
@@ -158,6 +160,7 @@ commit.** A router that lies is the named failure mode of this repo.
 | `codebase-review`      | engineering | orchestrator  | Compose `review` against the local working diff.                       |
 | `pr-review`            | engineering | orchestrator  | Compose `review` against a GitHub PR.                                  |
 | `review`               | engineering | discipline    | Shared code-review method; composed by the two above, never direct.    |
+| `design`               | engineering | discipline    | Design vocabulary (seam, depth, adapter) + smell baseline; composed.   |
 | `update-docs`          | engineering | orchestrator  | Reconcile docs with the implementation; runs as @linn.                 |
 
 ## Vault
@@ -169,6 +172,7 @@ do not emit them.
 
 ## Deferred (not yet built)
 
-- Specialized `<domain>-grill` / `<domain>-map` front doors (e.g. a
-  `positions-grill` hunting cohesive market positioning). The seam is built —
-  each is `{preload context} + {domain lens} → compose converge|diverge`.
+- Further specialized `<domain>-grill` / `<domain>-map` front doors (e.g. a
+  `positions-grill` hunting cohesive market positioning). The seam is proven —
+  `codebase-grill` and `codebase-map` are the first pair; each new one is
+  `{preload context} + {domain lens} → compose converge|diverge`.

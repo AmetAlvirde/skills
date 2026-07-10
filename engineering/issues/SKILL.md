@@ -19,10 +19,11 @@ mine scratch notes.
 
 Run at Opus 4.8 high — slicing is the judgment that makes the build reviewable.
 
-1. **Load the spec + seams** — read the approved spec (resolve through `HEAD.md`)
-   and explore enough code to know the affected seams. Check the ADR gate: block
-   if the spec references a missing/superseded ADR or contradicts an accepted one
-   in a way that would make slices misleading.
+1. **Load the spec + seams** — read the approved spec (resolve through
+   `HEAD.md`) and explore enough code to know the affected seams (per the
+   `design` discipline's vocabulary). Check the ADR
+   gate: block if the spec references a missing/superseded ADR or contradicts an
+   accepted one in a way that would make slices misleading.
 2. **Slice as tracer bullets** — each slice carries the domain behavior, data,
    interface, and tests it needs. Reject weak slices (only-DB, only-UI,
    only-tests, only-plumbing) unless named explicitly as a foundational,
@@ -34,6 +35,6 @@ Run at Opus 4.8 high — slicing is the judgment that makes the build reviewable
 
 ## Filing
 
-Slices live in the tracker (publish via `gh` after approval); git/PR mechanics go
-via @tux. Update `HEAD.md` with the slice set. `implement` builds them one at a
-time (@bit).
+Slices live in the tracker (publish via `gh` after approval); git/PR mechanics
+go via @tux. Update `HEAD.md` with the slice set. `implement` builds them one at
+a time (@bit).
