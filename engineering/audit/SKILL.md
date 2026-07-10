@@ -33,8 +33,8 @@ Run at Opus 4.8 xhigh — the value is judgment about assurance and blast radius
 3. **Bucket every finding** — exactly one of: **Must fix before reliable** (blocks
    the reliable claim), **Deferred with rationale** (a scoped, accepted risk),
    **Out-of-scope opportunity** (real, but outside this boundary). Add test and
-   compatibility needs, plus any *possible* ADR needs (hard-to-reverse,
-   surprising, a real trade-off) — flag, don't create.
+   compatibility needs, plus any *possible* ADR needs — all three of hard to
+   reverse, surprising without context, a real trade-off — flag, don't create.
 
 ## Filing
 
