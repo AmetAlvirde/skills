@@ -130,6 +130,15 @@ mismatch (a sub-agent running above its pinned tier) instead of hiding it. An
 agent that needs more than its ceiling flags it for a higher-tier re-spawn
 rather than silently exceeding it.
 
+## Commands
+
+`commands/` holds one boot command per agent — a prompt template that makes the
+main session **embody** that agent (you ARE it; not spawned as a sub-agent). Each
+file symlinks to `~/.claude/commands/<name>.md` (wired once, like `agents/`), so
+`/enn`, `/bit`, `/tux`, `/linn`, `/radar` resolve in any repo. `/enn` boots the
+orchestrator / command-post companion (orient, then stand by); the other four boot
+a focused single-worker session. `project-setup` links them alongside the agents.
+
 ## Router
 
 The dispatch map of every user-reachable skill. **Invariant (see `CLAUDE.md`):

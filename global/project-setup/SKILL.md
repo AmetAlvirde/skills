@@ -22,7 +22,8 @@ Run from the target repo's root (its path is cwd).
    `~/.claude/skills/<s>`. Skip any that already resolve there. This is the whole
    `global/` tier (`map`, `grill`, `diverge`, `converge`, `handoff`,
    `skill-setup`, `project-setup`) plus agents: `~/Dev/skills/agents/<a>.md` →
-   `~/.claude/agents/<a>.md`.
+   `~/.claude/agents/<a>.md` and commands: `~/Dev/skills/commands/<c>.md` →
+   `~/.claude/commands/<c>.md`.
 3. **Link the engineering skills per-skill** into a **real** dir — create
    `<repo>/.claude/skills/` if absent, then for each chosen skill
    `ln -sfn ~/Dev/skills/engineering/<s> <repo>/.claude/skills/<s>`. Per-skill,
