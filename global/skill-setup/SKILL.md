@@ -72,10 +72,20 @@ tier it in the agent that owns it.
 
 ## 5. Progressive disclosure
 
+Two costs, not one. **Context load** is tokens — what the model pays.
+**Cognitive load** is what a human must hold to stay in the loop — the price of
+human agency, and the one worth spending tokens to lower. A skill that halves
+context load by making its output unreadable has spent the wrong currency.
+
 One folder per skill. `SKILL.md` holds what **every** path needs; push
 branch-only material (templates, glossaries, long references) to sibling files
 behind a context pointer ("see `templates.md`"). Inline templates are Sediment
 waiting to happen — file them out.
+
+The pointer's **wording is the reliability lever** — the model decides whether
+to follow it from that sentence alone. "See `templates.md`" is a suggestion;
+"read `templates.md` — it is the source of truth for X" is an instruction. Say
+what the file settles, not that it exists.
 
 ## 6. Resolve through pointers, never hardcode
 
@@ -91,7 +101,18 @@ lines, not add them:
 - **Sediment** — stale layers that settle because adding feels safer than
   removing. The removable-line bloat in an old suite is Sediment in the wild.
 - **No-op** — a line that doesn't change behavior versus the default ("be
-  helpful", "use good judgment"). Costs context, buys nothing. Cut.
+  helpful", "use good judgment"). Costs context, buys nothing. Cut. The verdict
+  is **model-relative**: a line that carried a weaker model can be dead weight on
+  a stronger one, and only running the skill settles which — don't argue it from
+  the text.
+- **Premature completion** — the agent stops while work remains, because the
+  skill's bound was loose enough to look satisfied. A **completion criterion**
+  has two axes: *clarity* — how unambiguously "done" is testable — resists
+  premature completion; *demand* — how much the criterion asks for — drives
+  legwork. Defend in that order: first restate "done" as an end state the agent
+  can observe (a file that exists, a command that exits 0, a line that got
+  printed), never an adjective; only if that fails, hide the post-completion
+  steps behind a pointer the agent must go fetch.
 - **Duplication** — the same protocol in N skills. Extract to one discipline;
   compose it.
 - **Sprawl** — a skill doing several jobs. Split by turn-lifetime and by
@@ -112,4 +133,5 @@ section was No-op.
 None — this skill writes no artifact. It is a discipline you run while editing a
 SKILL.md, and it governs how every skill in this repo is authored and pruned.
 When a skill changes name, splits, or is absorbed, re-sync the router
-(`CLAUDE.md`) in the same edit — a router that lies is the named repo failure.
+(`README.md` §Router) in the same edit — a router that lies is the named repo
+failure.
