@@ -111,7 +111,7 @@ Agent tiers (default → escalation when a turn is genuinely stuck):
 | -------- | ------------------- | ---------------- | --------------- |
 | `@ennio` | orchestrate         | Opus 4.8 high    | Opus 4.8 xhigh  |
 | `@bit`   | implement/refactor  | Opus 4.8 medium  | Opus 4.8 high   |
-| `@tux`   | git                 | Haiku 4.5        | Sonnet 4.6 med  |
+| `@tux`   | git                 | Sonnet 4.6 med   | Opus 4.8 high   |
 | `@linn`  | docs / vault        | Sonnet 4.6 med   | Opus 4.8 high   |
 | `@radar` | state / briefings   | Opus 4.8 medium  | Opus 4.8 high   |
 
