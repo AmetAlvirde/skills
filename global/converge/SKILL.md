@@ -46,9 +46,10 @@ A good convergence session is never longer than 50 questions.
 ## Filing
 
 Save per `~/Dev/notes/_saving.md` — **read it**; source of truth for path,
-frontmatter, HEAD update, and wikilinks. This one: `artifact: grill`, file
-`<project>/<YYYY-MM-DD>-<topic>-grill.md`, `repo`/`repo_path` from cwd; reuse
-the source map's `id` and `[[link]]` it, and match existing grills' style in the
-project folder. Close by updating `<project>/HEAD.md` and offering to commit. If
-a decision rationale here would repeat on another project, run the valve
-(`_conventions.md` §4).
+frontmatter, HEAD update, wikilinks, and the closing report. This one:
+`artifact: grill`, file `<project>/<YYYY-MM-DD>-<topic>-grill.md`,
+`repo`/`repo_path` from cwd; reuse the source map's `id` and `[[link]]` it, and
+match existing grills' style in the project folder. If a decision rationale here
+would repeat on another project, run the valve (`_conventions.md` §4). Offer to
+commit, then close per `_saving.md` — its **Report back** step is the last thing
+you print.

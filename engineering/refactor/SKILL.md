@@ -37,6 +37,7 @@ Run at Opus 4.8 high — diagnosis is judgment about seams and blast radius.
 ## Filing
 
 Write the `refactor-diagnosis` artifact per `~/Dev/notes/_saving.md` — read it.
-Reuse the increment `id`, `[[link]]` the source. Close by updating `HEAD.md`. If
-a decision is hard to reverse, surprising without context, and a real trade-off,
-run `adr`. Build routes through `implement` (@bit).
+Reuse the increment `id`, `[[link]]` the source. If a decision is hard to
+reverse, surprising without context, and a real trade-off, run `adr`. Build
+routes through `implement` (@bit). Close per `_saving.md` — its **Report back**
+step is the last thing you print.

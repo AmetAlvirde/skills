@@ -34,8 +34,8 @@ passed.
 ## Filing
 
 Save per `~/Dev/notes/_saving.md` — **read it**; it's the source of truth for
-path, frontmatter, HEAD update, and wikilinks. This one: `artifact: handoff`,
-file `<project>/<YYYY-MM-DD>-<topic>-handoff.md`, `repo`/`repo_path` from cwd,
-add `git_branch`. Close by updating `<project>/HEAD.md` and offering to commit.
-If the session yielded a durable, transferable lesson, run the valve
-(`_conventions.md` §4).
+path, frontmatter, HEAD update, wikilinks, and the closing report. This one:
+`artifact: handoff`, file `<project>/<YYYY-MM-DD>-<topic>-handoff.md`,
+`repo`/`repo_path` from cwd, add `git_branch`. If the session yielded a durable,
+transferable lesson, run the valve (`_conventions.md` §4). Offer to commit, then
+close per `_saving.md` — its **Report back** step is the last thing you print.

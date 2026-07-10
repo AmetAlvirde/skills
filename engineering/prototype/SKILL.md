@@ -34,5 +34,6 @@ across the loop); the skill sets the mode, @bit builds, @tux lands any git.
 
 Write the `prototype` artifact per `~/Dev/notes/_saving.md` — read it.
 `assurance: prototype`, reuse the increment `id`, `[[link]]` the source map, and
-list known shortcuts + how to run. Close by updating `HEAD.md`; offer to commit.
-The usual next steps are `aar` then `audit`.
+list known shortcuts + how to run. The usual next steps are `aar` then `audit`.
+Offer to commit, then close per `_saving.md` — its **Report back** step is the
+last thing you print.

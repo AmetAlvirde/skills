@@ -32,4 +32,5 @@ code, not asked of the human.
 
 `converge` writes the artifact (`artifact: grill`) per `~/Dev/notes/_saving.md`
 — read it. Reuse the increment's `id`, note that context came from the repo, and
-`[[link]]` the source map. Close by updating `HEAD.md`; offer to commit.
+`[[link]]` the source map. Offer to commit, then close per `_saving.md` — its
+**Report back** step is the last thing you print.

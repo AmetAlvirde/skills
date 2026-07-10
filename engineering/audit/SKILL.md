@@ -41,4 +41,5 @@ Run at Opus 4.8 xhigh — the value is judgment about assurance and blast radius
 Write the `audit-findings` artifact per `~/Dev/notes/_saving.md` — read it. Record
 prototype source + reliable baseline in frontmatter, reuse the increment `id`,
 `[[link]]` the aar. If the increment isn't ready for `spec`, say so plainly with
-the reason. Close by updating `HEAD.md`.
+the reason. Close per `_saving.md` — its **Report back** step is the last thing
+you print.

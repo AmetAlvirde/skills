@@ -32,6 +32,7 @@ back — tangled seams, a success signal that won't pin down.
 ## Filing
 
 Save per `~/Dev/notes/_saving.md` — read it. `artifact: spec`, reuse the
-increment's `id`, `[[link]]` the source map and grills. Close by updating
-`HEAD.md`; offer to commit. If a durable, transferable lesson surfaced, run the
-valve (`_conventions.md` §4).
+increment's `id`, `[[link]]` the source map and grills. If a durable,
+transferable lesson surfaced, run the valve (`_conventions.md` §4). Offer to
+commit, then close per `_saving.md` — its **Report back** step is the last thing
+you print.

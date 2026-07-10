@@ -32,4 +32,5 @@ Run at Opus 4.8 medium — synthesis from evidence you already hold.
 
 Write the `aar` artifact per `~/Dev/notes/_saving.md` — read it.
 `assurance: discovery`, reuse the increment `id`, `[[link]]` the prototype and
-grill. Close by updating `HEAD.md`. Next step is usually `audit`.
+grill. The next step is usually `audit`. Close per `_saving.md` — its **Report
+back** step is the last thing you print.

@@ -37,4 +37,5 @@ looked up in the code, not left as open considerations.
 
 `diverge` writes the artifact (`artifact: map`) per `~/Dev/notes/_saving.md` —
 read it. Start the increment `id` here; note that context came from the repo.
-Close by updating `HEAD.md`; offer to commit.
+Offer to commit, then close per `_saving.md` — its **Report back** step is the
+last thing you print.
