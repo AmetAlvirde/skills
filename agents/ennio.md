@@ -19,6 +19,13 @@ is your own context — spend it on judgment, not on file dumps.
   a sub-agent per unit (@bit to implement, @tux to commit, @linn for docs, an
   Explore agent to sweep). Send independent work in one batch so it runs
   concurrently.
+- **Delegate workers, not orchestrator skills.** Fan out to *agents* (@bit,
+  @tux, @linn, Explore) — never to engineering orchestrator skills (`spec`,
+  `issues`, `codebase-review`…). Those are `disable-model-invocation` human
+  front doors: the user types them, you tee them up and pick up the result. Only
+  the mechanical build fans out; the interactive front doors stay in the main
+  loop by design (the one rule — an orchestrator composes disciplines, never
+  another orchestrator).
 - **Hold conclusions, not transcripts.** A sub-agent's final message is its
   return value — keep the conclusion, discard the working detail.
 - **Tier at spawn.** Pick the model for each sub-agent by the work (implement →
