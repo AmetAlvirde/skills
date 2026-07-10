@@ -28,15 +28,22 @@ Run from the target repo's root (its path is cwd).
    `ln -sfn ~/Dev/skills/engineering/<s> <repo>/.claude/skills/<s>`. Per-skill,
    not a whole-dir link: promoting one skill to `global/` later stays a
    deliberate move.
-4. **Gitignore the symlinks** — ensure `<repo>/.gitignore` contains
+4. **Flag unmanaged dirs** — after linking, list anything in
+   `<repo>/.claude/skills/` that is a **real directory, not a symlink into
+   `~/Dev/skills`** (e.g. vendored or retired skill sets). Report each as
+   `unmanaged — review/remove`; never delete it — removal is a deliberate act for
+   the operator, not a side effect of setup.
+5. **Gitignore the symlinks** — ensure `<repo>/.gitignore` contains
    `.claude/skills/`. The symlinks are never committed; the source of truth is
    `~/Dev/skills`.
-5. **Scaffold the vault project** — if `~/Dev/notes/<project>/HEAD.md` is missing,
+6. **Scaffold the vault project** — if `~/Dev/notes/<project>/HEAD.md` is missing,
    create the project folder and a `HEAD.md` per `~/Dev/notes/_saving.md` (read
-   it — it is the source of truth for HEAD frontmatter and format). Match an
-   existing project's `HEAD.md` in the vault.
-6. **Report** — list what was linked (globals, agents, per-repo skills), the
-   gitignore change, and the vault path. Note any skills the repo already had.
+   it — it is the source of truth for HEAD frontmatter and format), and register
+   `<project>` in that file's project enum so the registry stays truthful. Match
+   an existing project's `HEAD.md` in the vault.
+7. **Report** — list what was linked (globals, agents, per-repo skills), the
+   gitignore change, the vault path, and any **unmanaged dirs flagged** in step 4.
+   Note any skills the repo already had.
 
 ## Filing
 
