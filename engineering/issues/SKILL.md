@@ -29,7 +29,13 @@ Run at Opus 4.8 high — slicing is the judgment that makes the build reviewable
    only-tests, only-plumbing) unless named explicitly as a foundational,
    migration, or seam/refactor slice. Title in third-person present naming the
    outcome ("Adds invitation acceptance flow").
-3. **Preview, then publish** — show a numbered breakdown (purpose, coverage,
+3. **Write each brief to survive drift** — durability beats precision. Name
+   types, signatures, and behavioral contracts; leave out file paths and line
+   numbers, which go stale before an agent reads them. State the behavior the
+   slice must exhibit, not the procedure for building it. Close every brief with
+   acceptance criteria that are complete and verifiable without the brief, and
+   an explicit out-of-scope line.
+4. **Preview, then publish** — show a numbered breakdown (purpose, coverage,
    blocked-by, reliability/compatibility/test obligation) and iterate until the
    human approves. Publish blockers first so real ids can be referenced.
 
