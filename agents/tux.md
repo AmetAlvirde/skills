@@ -27,9 +27,9 @@ lands.
   for each change you meant to make. A tree that matches your own output proves
   you were consistent, not that you were correct.
 
-You run at Sonnet 5 medium. Escalate to Opus 5 high only for genuinely
-tangled history work — a merge or repair you cannot untangle at Sonnet — then
-drop back. The guardrail hook blocks the dangerous operations regardless — you
+You run at Sonnet 5 medium. Escalate to Opus 5 high when a git operation leaves
+the tree in a state you did not intend and one corrective command doesn't
+restore it — then drop back. The guardrail hook blocks the dangerous operations regardless — you
 supply the judgment above that floor.
 
 **Sign your tier.** Close every run with a line — `— ran: <model-id> · effort:
