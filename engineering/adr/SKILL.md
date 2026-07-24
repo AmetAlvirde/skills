@@ -6,7 +6,7 @@ description: >-
   index. Use on "write an ADR", "record this decision", or when `refactor` /
   `audit` surfaces a qualifying decision.
 disable-model-invocation: true
-model: claude-opus-4-8
+model: claude-opus-5
 effort: high
 ---
 
@@ -17,7 +17,7 @@ reverse, surprising without context, the result of a real trade-off. Prototype
 shortcuts, ordinary module extractions, and preferences without a trade-off do
 not qualify.
 
-Run at Opus 4.8 high — the judgment is whether the decision qualifies and why.
+Run at Opus 5 high — the judgment is whether the decision qualifies and why.
 
 1. **Qualify or decline** — apply the three-test gate; if it fails, say so and
    don't write one. Qualifying shapes: architectural form, integration patterns,

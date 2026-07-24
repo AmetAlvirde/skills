@@ -7,7 +7,7 @@ description: >-
   possible-ADR needs. Use on "audit this", "what's the gap to reliable", after
   `prototype`/`aar` and before `spec`.
 disable-model-invocation: true
-model: claude-opus-4-8
+model: claude-opus-5
 effort: xhigh
 ---
 
@@ -17,7 +17,7 @@ Analysis only — you audit the gap from *prototype* assurance to *reliable*
 assurance. You do not refactor, write tests, fix findings, create ADRs, or touch
 git state; naming the gap is the whole job.
 
-Run at Opus 4.8 xhigh — the value is judgment about assurance and blast radius.
+Run at Opus 5 xhigh — the value is judgment about assurance and blast radius.
 
 1. **Name the boundary** — state the prototype source (working tree, branch, PR,
    or commit range) and the reliable baseline (default branch or merge-base)

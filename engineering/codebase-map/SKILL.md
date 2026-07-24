@@ -7,7 +7,7 @@ description: >-
   `map`. Use on "codebase-map", "map this against the code", "map this feature
   in-repo".
 disable-model-invocation: true
-model: claude-opus-4-8
+model: claude-opus-5
 effort: high
 ---
 

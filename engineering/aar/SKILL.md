@@ -6,7 +6,7 @@ description: >-
   discard. Use on "aar", "what did the prototype teach us", after `prototype`
   and before `audit`. Also recovers prototype-first work that skipped the grill.
 disable-model-invocation: true
-model: claude-opus-4-8
+model: claude-opus-5
 effort: medium
 ---
 
@@ -16,7 +16,7 @@ Synthesize the learning, don't defend the code. The prototype was a question;
 the AAR is the answer — what's validated, what becomes reliable, what to throw
 away.
 
-Run at Opus 4.8 medium — synthesis from evidence you already hold.
+Run at Opus 5 medium — synthesis from evidence you already hold.
 
 1. **Draft from evidence first** — read the source map/grill, the prototype
    note, and the prototype diff (resolve through `HEAD.md`). Ask focused

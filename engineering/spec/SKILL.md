@@ -5,7 +5,7 @@ description: >-
   Confirm the seams before writing, publish to GitHub, and file the spec
   artifact. Use on "write the spec", "spec this", "turn this into a PRD".
 disable-model-invocation: true
-model: claude-opus-4-8
+model: claude-opus-5
 effort: high
 ---
 
@@ -13,7 +13,7 @@ effort: high
 
 Synthesize, don't interview. By the time you write a spec the thinking is done
 (via `map`/`grill`); your job is to render it faithfully and confirm the seams.
-Run at Opus 4.8 high; raise `effort` to xhigh only when the synthesis fights
+Run at Opus 5 high; raise `effort` to xhigh only when the synthesis fights
 back — tangled seams, a success signal that won't pin down.
 
 1. **Gather the agreed understanding** — pull from the increment's map and

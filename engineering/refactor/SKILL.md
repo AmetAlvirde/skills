@@ -7,7 +7,7 @@ description: >-
   "diagnose the refactor", when reliability / testability / coupling is the
   driver rather than a product feature.
 disable-model-invocation: true
-model: claude-opus-4-8
+model: claude-opus-5
 effort: high
 ---
 
@@ -18,7 +18,7 @@ reliability, testability, compatibility, or module-depth outcome — never "make
 it nicer". This skill _diagnoses and frames_; @bit then builds
 behavior-preserving slices via `implement`.
 
-Run at Opus 4.8 high — diagnosis is judgment about seams and blast radius.
+Run at Opus 5 high — diagnosis is judgment about seams and blast radius.
 
 1. **Inspect the friction** — read the code, tests, and relevant ADRs around the
    reported friction (resolve context through `HEAD.md`). Look for duplicated

@@ -100,24 +100,24 @@ specializes it (`grill` → `codebase-grill`; `review` → `codebase-review`,
 
 Single-turn disciplines pin `model`/`effort` in **skill** frontmatter (resets
 next turn — correct for one-shot methods). Multi-turn/agentic work tiers via the
-**agent**, which holds the tier across the loop. Ceiling: Opus 4.8 xhigh (Fable
-high while the subscription allows). **Sonnet 4.6 is preferred over Sonnet 5** —
-pin the full id `claude-sonnet-4-6`, never the `sonnet` alias (which resolves to
-Sonnet 5).
+**agent**, which holds the tier across the loop. Ceiling: Opus 5 xhigh (Fable
+high while the subscription allows). **Pin exact model ids** —
+`claude-opus-5`, `claude-sonnet-5` — never a bare alias like `sonnet`, and
+never append a date suffix.
 
 Agent tiers (default → escalation when a turn is genuinely stuck):
 
-| Agent    | Role                | Default          | Escalation      |
-| -------- | ------------------- | ---------------- | --------------- |
-| `@ennio` | orchestrate         | Opus 4.8 high    | Opus 4.8 xhigh  |
-| `@bit`   | implement/refactor  | Opus 4.8 medium  | Opus 4.8 high   |
-| `@tux`   | git                 | Sonnet 4.6 med   | Opus 4.8 high   |
-| `@linn`  | docs / vault        | Sonnet 4.6 med   | Opus 4.8 high   |
-| `@radar` | state / briefings   | Opus 4.8 medium  | Opus 4.8 high   |
+| Agent    | Role                | Default        | Escalation    |
+| -------- | ------------------- | -------------- | ------------- |
+| `@ennio` | orchestrate         | Opus 5 high    | Opus 5 xhigh  |
+| `@bit`   | implement/refactor  | Opus 5 medium  | Opus 5 high   |
+| `@tux`   | git                 | Sonnet 5 med   | Opus 5 high   |
+| `@linn`  | docs / vault        | Sonnet 5 med   | Opus 5 high   |
+| `@radar` | state / briefings   | Opus 5 medium  | Opus 5 high   |
 
 Single-turn skills self-tier: `codebase-map`, `codebase-grill`, `spec`, `refactor`,
-`adr`, `issues`, `codebase-review`, `pr-review` = Opus 4.8 high (`spec` → xhigh
-when the synthesis fights back); `audit` = Opus 4.8 xhigh; `aar` = Opus 4.8 medium. Multi-turn build skills
+`adr`, `issues`, `codebase-review`, `pr-review` = Opus 5 high (`spec` → xhigh
+when the synthesis fights back); `audit` = Opus 5 xhigh; `aar` = Opus 5 medium. Multi-turn build skills
 carry **no** skill pin — `prototype` and `implement` run as **@bit**,
 `update-docs` as **@linn**; the `review` and `design` disciplines inherit the
 tier of the skill that composes them.

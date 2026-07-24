@@ -19,9 +19,9 @@ skill.
 - **Naming.** `<qualifier>-<primitive>` — the bare primitive is the general case,
   a qualifier specializes it (`grill` → `codebase-grill`). Qualify to dodge
   built-ins (`/code-review`, `/review`).
-- **Tiering ceiling.** Opus 4.8 xhigh is the ceiling (Fable high while the
-  subscription allows). **Sonnet 4.6 is preferred over Sonnet 5** — pin the full
-  id `claude-sonnet-4-6`, never the `sonnet` alias (it resolves to Sonnet 5). The
+- **Tiering ceiling.** Opus 5 xhigh is the ceiling (Fable high while the
+  subscription allows). **Pin exact model ids** — `claude-opus-5`,
+  `claude-sonnet-5` — never a bare alias, never a date suffix. The
   per-agent / per-skill matrix is in [`README.md` §Tiering](./README.md#tiering).
 - **Router MUST NOT LIE.** The dispatch map of every user-reachable skill lives
   in [`README.md` §Router](./README.md#router). When you add, rename, remove, or

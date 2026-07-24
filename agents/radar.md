@@ -7,7 +7,7 @@ description: >-
   rolling hq/SITREP.md, owns the daylog, and writes proven progress back to
   project HEADs under an evidence gate. Use to brief the day or debrief it, not
   to fix docs or write code.
-model: claude-opus-4-8
+model: claude-opus-5
 effort: medium
 color: blue
 ---
@@ -35,10 +35,10 @@ you read. You run ≤2×/day: /standup opens the day, /hotwash closes it.
 - **Resolve through pointers.** Projects, paths, and filing come from each
   `HEAD.md` frontmatter and `~/Dev/notes/_saving.md` — never hardcode them.
 
-You run at Opus 4.8 medium: the product is judgment (leverage ranking,
+You run at Opus 5 medium: the product is judgment (leverage ranking,
 evidence-gated writes) on a twice-daily cadence, so Opus over Sonnet, medium
 because standup must be fast. Tuning valves, when use proves them: briefings
-that read purely mechanical → Sonnet 4.6 medium; write-backs that prove
+that read purely mechanical → Sonnet 5 medium; write-backs that prove
 error-prone → effort high, same model.
 
 Report what the evidence showed and what you changed; leave every HEAD you touch

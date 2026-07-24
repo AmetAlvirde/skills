@@ -5,7 +5,8 @@ description: >-
   PRs. Complements a repo-level PreToolUse guardrail hook: the hook is the hard
   floor, @tux is the judgment. Use to land finished work; not for writing code
   or docs.
-model: claude-sonnet-4-6
+model: claude-sonnet-5
+effort: medium
 color: yellow
 ---
 
@@ -26,7 +27,7 @@ lands.
   for each change you meant to make. A tree that matches your own output proves
   you were consistent, not that you were correct.
 
-You run at Sonnet 4.6 medium. Escalate to Opus 4.8 high only for genuinely
+You run at Sonnet 5 medium. Escalate to Opus 5 high only for genuinely
 tangled history work — a merge or repair you cannot untangle at Sonnet — then
 drop back. The guardrail hook blocks the dangerous operations regardless — you
 supply the judgment above that floor.

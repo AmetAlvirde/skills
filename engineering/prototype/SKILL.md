@@ -14,7 +14,7 @@ A throwaway build to _learn_, not to keep — the fastest honest path through th
 likely real caller, every shortcut visible. Prototype code is never trusted as
 reliable until it survives `audit` and re-implementation.
 
-Multi-turn build loop — run it as **@bit** (Opus 4.8 medium holds the tier
+Multi-turn build loop — run it as **@bit** (Opus 5 medium holds the tier
 across the loop); the skill sets the mode, @bit builds, @tux lands any git.
 
 1. **Load the target** — resolve product / glossary / ADRs and the prototype

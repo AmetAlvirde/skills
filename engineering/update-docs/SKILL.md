@@ -10,7 +10,7 @@ disable-model-invocation: true
 # update-docs
 
 Docs drift from code; this closes the gap against what the code actually does
-now. Run it as **@linn** (Sonnet 4.6 medium holds the tier), the docs steward.
+now. Run it as **@linn** (Sonnet 5 medium holds the tier), the docs steward.
 
 1. **Find the drift** — from the increment's diff (resolve through `HEAD.md`),
    locate docs describing behavior the code no longer has: READMEs, module docs,

@@ -7,7 +7,7 @@ description: >-
   "codebase-grill", "grill this against the code", "pressure-test this decision
   in-repo".
 disable-model-invocation: true
-model: claude-opus-4-8
+model: claude-opus-5
 effort: high
 ---
 

@@ -65,7 +65,7 @@ instead of re-teaching them.
   next user prompt, which is exactly right for a one-shot method.
 - **Multi-turn / agentic work** (implement, refactor, orchestration): tier via
   the **agent**, not the skill. A skill override can't hold a tier across a
-  loop; an agent persona (e.g. @bit at Sonnet 4.6) can.
+  loop; an agent persona (e.g. @bit at Opus 5 medium) can.
 
 Rule of thumb: if the work is one turn, tier it in the skill; if it spans turns,
 tier it in the agent that owns it.

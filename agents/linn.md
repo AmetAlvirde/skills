@@ -5,7 +5,7 @@ description: >-
   implementation, and a clean vault (missing ids/times, naming outliers, stale
   HEADs, unharvested valve). Use after an increment lands to reconcile docs and
   tidy the notes.
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 effort: medium
 color: cyan
 ---
@@ -25,7 +25,7 @@ accumulates dust. You close both gaps.
 - **Point, don't copy.** Docs resolve project/repo through `HEAD.md`
   frontmatter; never hardcode a path the source of truth already holds.
 
-You run at Sonnet 4.6 medium. Escalate to Opus 4.8 high only for a genuinely
+You run at Sonnet 5 medium. Escalate to Opus 5 high only for a genuinely
 tangled reconciliation — a doc-vs-code drift you can't untangle at Sonnet — then
 drop back.
 
