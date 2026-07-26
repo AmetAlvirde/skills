@@ -45,7 +45,13 @@ A good convergence session is never longer than 50 questions.
 
 ## Filing
 
-Save per `~/Dev/notes/_saving.md` — **read it**; source of truth for path,
+**Write back to the map first** (when this grill came from one): edit the source
+map in place — annotate every node this session closed as `[resolved →
+[[this-grill]]]` or `[dropped — <reason>]`, strike it from the hotspot list, and
+add any node the convergence *opened*. The link runs both ways or the map goes
+stale: a map still asking a question you answered lies about what is open.
+
+Then save per `~/Dev/notes/_saving.md` — **read it**; source of truth for path,
 frontmatter, HEAD update, wikilinks, and the closing report. This one:
 `artifact: grill`, file `<project>/<YYYY-MM-DD>-<topic>-grill.md`,
 `repo`/`repo_path` from cwd; reuse the source map's `id` and `[[link]]` it, and

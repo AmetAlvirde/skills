@@ -24,7 +24,10 @@ lens, cast wide across the general dimensions below.
    domain model, constraints, dependencies, risks, sequencing, success signal…).
    Cast wide.
 3. **Expand each branch** into its considerations and unknowns. **Number nodes
-   hierarchically** (1, 1.1, 1.2…) so any node is addressable by `converge`.
+   hierarchically** (1, 1.1, 1.2…) so any node is addressable by `converge`. A
+   node is **open** unless annotated — `[resolved → [[grill]]]` or `[dropped —
+   <reason>]`. Annotate only on change; `converge` writes these back as it
+   closes nodes, so an un-annotated node is a live question.
 4. **Map dependencies** — which nodes gate others; the upstream load-bearing
    set.
 5. **Flag hotspots** — highest-uncertainty / highest-leverage nodes (converge
@@ -32,6 +35,12 @@ lens, cast wide across the general dimensions below.
 6. **Point downstream** — what this map feeds and the recommended next move.
 
 A map is a scaffold for thinking, not the thinking itself — breadth over depth.
+It is also **living**: grills mutate it in place, so a re-read shows what is
+still open. Never fork a resolved map into a new file — edit the original.
+
+When a branch outgrows the map, split it into its own map and leave the parent
+node as a `[[link]]` to it. That is how several maps compose; there is no
+container above the map.
 
 ## Filing
 
