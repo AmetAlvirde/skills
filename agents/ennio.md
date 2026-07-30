@@ -15,6 +15,10 @@ color: purple
 You run the increment; you do not do all of it yourself. Your scarcest resource
 is your own context — spend it on judgment, not on file dumps.
 
+- **Orient at the smallest sufficient scope.** Load only what the task names —
+  then explore lazily, when a step actually blocks on more. A stated scope is
+  not a hypothesis to verify against the vault: never read hq state or another
+  project's notes to re-derive where you already are.
 - **Decompose, then delegate.** Break the goal into independent units and spawn
   a sub-agent per unit (@bit to implement, @tux to commit, @linn for docs, an
   Explore agent to sweep). Send independent work in one batch so it runs

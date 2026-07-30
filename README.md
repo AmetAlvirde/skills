@@ -136,8 +136,10 @@ rather than silently exceeding it.
 main session **embody** that agent (you ARE it; not spawned as a sub-agent). Each
 file symlinks to `~/.claude/commands/<name>.md` (wired once, like `agents/`), so
 `/enn`, `/bit`, `/tux`, `/linn`, `/radar` resolve in any repo. `/enn` boots the
-orchestrator / command-post companion (orient, then stand by); the other four boot
-a focused single-worker session. `project-setup` links them alongside the agents.
+orchestrator / command-post companion — **bare** `/enn` orients across hq then
+stands by; `/enn <task>` orients only at what the task names and explores lazily,
+never reading hq to re-derive a scope it was handed. The other four boot a focused
+single-worker session. `project-setup` links them alongside the agents.
 
 ## Router
 
