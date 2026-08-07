@@ -69,8 +69,8 @@ Every **engineering** skill is one of two kinds:
 - **Orchestrator** — a thin front door a human runs. Composes disciplines by
   prose. Defaults to `disable-model-invocation: true` (zero per-turn cost until
   invoked). Drop that line on an orchestrator that is routinely **delegated** —
-  `implement` and `pr-review` are handed to a sub-agent, and a sub-agent can
-  only reach a skill the model is allowed to invoke.
+  `implement`, `pr-review`, and `audit` are handed to a sub-agent, and a
+  sub-agent can only reach a skill the model is allowed to invoke.
 - **Discipline** — the reusable method, `user-invocable: false` (model-only,
   hidden from `/`). Rich trigger description.
 
@@ -165,7 +165,7 @@ commit.** A router that lies is the named failure mode of this repo.
 | `codebase-grill`       | engineering | orchestrator  | Load repo context, then compose `converge` against the live code.      |
 | `prototype`            | engineering | orchestrator  | Build a throwaway prototype to learn; runs as @bit, files the note.    |
 | `aar`                  | engineering | orchestrator  | Synthesize what the prototype taught — reliable vs discard.            |
-| `audit`                | engineering | orchestrator  | Bucket the prototype→reliable assurance gap (analysis only).           |
+| `audit`                | engineering | orchestrator* | Bucket the prototype→reliable assurance gap (analysis only).           |
 | `spec`                 | engineering | orchestrator  | Synthesize a spec from an agreed understanding; publish + file.        |
 | `issues`               | engineering | orchestrator  | Decompose an approved spec into tracer-bullet slice issues.            |
 | `implement`            | engineering | orchestrator* | Build one reliable slice red→green; runs as @bit, commits via @tux.    |

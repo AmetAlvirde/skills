@@ -6,7 +6,6 @@ description: >-
   must-fix / deferred / out-of-scope, plus test, compatibility, seam, and
   possible-ADR needs. Use on "audit this", "what's the gap to reliable", after
   `prototype`/`aar` and before `spec`.
-disable-model-invocation: true
 model: claude-opus-5
 effort: xhigh
 ---
