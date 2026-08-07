@@ -66,8 +66,11 @@ step.
 
 Every **engineering** skill is one of two kinds:
 
-- **Orchestrator** — a thin front door a human runs. `disable-model-invocation:
-  true` (zero per-turn cost until invoked). Composes disciplines by prose.
+- **Orchestrator** — a thin front door a human runs. Composes disciplines by
+  prose. Defaults to `disable-model-invocation: true` (zero per-turn cost until
+  invoked). Drop that line on an orchestrator that is routinely **delegated** —
+  `implement` and `pr-review` are handed to a sub-agent, and a sub-agent can
+  only reach a skill the model is allowed to invoke.
 - **Discipline** — the reusable method, `user-invocable: false` (model-only,
   hidden from `/`). Rich trigger description.
 
@@ -165,14 +168,17 @@ commit.** A router that lies is the named failure mode of this repo.
 | `audit`                | engineering | orchestrator  | Bucket the prototype→reliable assurance gap (analysis only).           |
 | `spec`                 | engineering | orchestrator  | Synthesize a spec from an agreed understanding; publish + file.        |
 | `issues`               | engineering | orchestrator  | Decompose an approved spec into tracer-bullet slice issues.            |
-| `implement`            | engineering | orchestrator  | Build one reliable slice red→green; runs as @bit, commits via @tux.    |
+| `implement`            | engineering | orchestrator* | Build one reliable slice red→green; runs as @bit, commits via @tux.    |
 | `refactor`             | engineering | orchestrator  | Diagnose a refactor → refactor-diagnosis; build via `implement`.       |
 | `adr`                  | engineering | orchestrator  | Record a qualifying architecture decision in-repo; keep the index.     |
 | `codebase-review`      | engineering | orchestrator  | Compose `review` against the local working diff.                       |
-| `pr-review`            | engineering | orchestrator  | Compose `review` against a GitHub PR.                                  |
+| `pr-review`            | engineering | orchestrator* | Compose `review` against a GitHub PR.                                  |
 | `review`               | engineering | discipline    | Shared code-review method; composed by the two above, never direct.    |
 | `design`               | engineering | discipline    | Design vocabulary (seam, depth, adapter) + smell baseline; composed.   |
 | `update-docs`          | engineering | orchestrator  | Reconcile docs with the implementation; runs as @linn.                 |
+
+`*` = also **model-invocable** (no `disable-model-invocation`), so a delegated
+sub-agent can invoke it directly instead of only a human at the `/` prompt.
 
 ## Vault
 

@@ -5,7 +5,6 @@ description: >-
   narrow and independently reviewable. The build loop runs as @bit. Use on
   "implement this slice", "build the slice", or after `spec`/`issues` define a
   slice.
-disable-model-invocation: true
 ---
 
 # implement
