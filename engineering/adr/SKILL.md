@@ -5,7 +5,6 @@ description: >-
   context, and a real trade-off — sparingly. Also loads and updates ADRs and the
   index. Use on "write an ADR", "record this decision", or when `refactor` /
   `audit` surfaces a qualifying decision.
-disable-model-invocation: true
 model: claude-opus-5
 effort: high
 ---

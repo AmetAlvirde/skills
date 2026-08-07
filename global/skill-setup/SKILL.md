@@ -17,10 +17,15 @@ versus the default?** If not, cut it.
 
 ## 1. Invocation taxonomy — every skill is one of two kinds
 
-- **Orchestrator** (user-invoked): a thin front door a human runs. Frontmatter
-  `disable-model-invocation: true` → its description is never injected per-turn,
-  so it costs zero context until invoked. Composes disciplines by prose ("Run
-  the codebase-grill skill"). Target **≤ 15 lines**.
+- **Orchestrator** (user-invoked): a thin front door a human runs. Composes
+  disciplines by prose ("Run the codebase-grill skill"). Target **≤ 15 lines**.
+  Leave it **model-invocable by default** — a sub-agent reaches only skills the
+  model may invoke, so guarding one hides the method from the agent spawned to
+  run it. Add `disable-model-invocation: true` (description never injected
+  per-turn, zero context until invoked) only when the skill is **dialogue-bound**:
+  it advances by asking the human numbered questions, so a sub-agent cannot run
+  it to completion. A description costs ~60–90 tokens per turn; buy that back
+  only for a skill nothing can delegate.
 - **Discipline** (model-invoked): the reusable method, loaded on demand.
   Frontmatter `user-invocable: false` → hidden from the `/` menu, model-only.
   Rich, trigger-laden `description` (that's how the model finds it). Target

@@ -4,7 +4,6 @@ description: >-
   Reconcile docs with the implementation after an increment lands — fix docs that
   describe behavior the code no longer has. Runs as @linn. Use on "update the
   docs", "reconcile the docs", after `implement` changes behavior.
-disable-model-invocation: true
 ---
 
 # update-docs

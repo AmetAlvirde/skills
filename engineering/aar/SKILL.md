@@ -5,7 +5,6 @@ description: >-
   implementation accident; state what should become reliable and what to
   discard. Use on "aar", "what did the prototype teach us", after `prototype`
   and before `audit`. Also recovers prototype-first work that skipped the grill.
-disable-model-invocation: true
 model: claude-opus-5
 effort: medium
 ---

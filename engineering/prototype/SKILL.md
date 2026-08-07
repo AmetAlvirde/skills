@@ -5,7 +5,6 @@ description: >-
   shortcuts, no speculative architecture, throwaway assurance. The build loop
   runs as @bit. Use on "prototype this", "spike it", "build a throwaway to learn
   X", or after a map/grill sets a prototype target.
-disable-model-invocation: true
 ---
 
 # prototype

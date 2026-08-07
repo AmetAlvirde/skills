@@ -6,7 +6,6 @@ description: >-
   the build; @bit executes the slices via `implement`. Use on "refactor this",
   "diagnose the refactor", when reliability / testability / coupling is the
   driver rather than a product feature.
-disable-model-invocation: true
 model: claude-opus-5
 effort: high
 ---

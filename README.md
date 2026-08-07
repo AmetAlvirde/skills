@@ -67,11 +67,13 @@ step.
 Every **engineering** skill is one of two kinds:
 
 - **Orchestrator** — a thin front door a human runs. Composes disciplines by
-  prose. Defaults to `disable-model-invocation: true` (zero per-turn cost until
-  invoked). Drop that line on one that is routinely **delegated**: a sub-agent
-  reaches only skills the model may invoke, so the flag would hide the method
-  from the very agent spawned to run it. The `*` rows in §Router are the roster
-  — kept there, not duplicated here.
+  prose. **Model-invocable by default** (the `*` rows in §Router — the roster is
+  kept there, not duplicated here): a sub-agent reaches only skills the model may
+  invoke, so guarding one hides the method from the very agent spawned to run it.
+  Add `disable-model-invocation: true` only when the skill is **dialogue-bound** —
+  it advances by asking the human numbered questions, so a sub-agent cannot run
+  it to completion. The guard buys zero per-turn cost; a description is ~60–90
+  tokens per turn, in wired repos only.
 - **Discipline** — the reusable method, `user-invocable: false` (model-only,
   hidden from `/`). Rich trigger description.
 
@@ -159,27 +161,35 @@ commit.** A router that lies is the named failure mode of this repo.
 | `converge`             | global      | discipline    | Shared convergence method + grill artifact; composed, not run directly.|
 | `handoff`              | global      | model-invoked | Capture working state for a zero-context successor.                    |
 | `skill-setup`          | global      | model-invoked | Author/prune skills (taxonomy, naming, failure modes).                 |
-| `project-setup`        | global      | user-invoked  | Wire a repo to consume `engineering/` skills; scaffold its vault HEAD. |
+| `project-setup`        | global      | user-invoked* | Wire a repo to consume `engineering/` skills; scaffold its vault HEAD. |
 | `standup`              | global      | user-invoked  | Log-in briefing: `@radar` refreshes `hq/SITREP.md`, opens the daylog.  |
 | `hotwash`              | global      | user-invoked  | Log-out debrief: `@radar` seals the daylog, evidence-writes to HEADs.  |
 | `codebase-map`         | engineering | orchestrator  | Load repo context, then compose `diverge` with the code as the lens.   |
 | `codebase-grill`       | engineering | orchestrator  | Load repo context, then compose `converge` against the live code.      |
-| `prototype`            | engineering | orchestrator  | Build a throwaway prototype to learn; runs as @bit, files the note.    |
-| `aar`                  | engineering | orchestrator  | Synthesize what the prototype taught — reliable vs discard.            |
+| `prototype`            | engineering | orchestrator* | Build a throwaway prototype to learn; runs as @bit, files the note.    |
+| `aar`                  | engineering | orchestrator* | Synthesize what the prototype taught — reliable vs discard.            |
 | `audit`                | engineering | orchestrator* | Bucket the prototype→reliable assurance gap (analysis only).           |
 | `spec`                 | engineering | orchestrator* | Synthesize a spec from an agreed understanding; publish + file.        |
 | `issues`               | engineering | orchestrator* | Decompose an approved spec into tracer-bullet slice issues.            |
 | `implement`            | engineering | orchestrator* | Build one reliable slice red→green; runs as @bit, commits via @tux.    |
-| `refactor`             | engineering | orchestrator  | Diagnose a refactor → refactor-diagnosis; build via `implement`.       |
-| `adr`                  | engineering | orchestrator  | Record a qualifying architecture decision in-repo; keep the index.     |
-| `codebase-review`      | engineering | orchestrator  | Compose `review` against the local working diff.                       |
+| `refactor`             | engineering | orchestrator* | Diagnose a refactor → refactor-diagnosis; build via `implement`.       |
+| `adr`                  | engineering | orchestrator* | Record a qualifying architecture decision in-repo; keep the index.     |
+| `codebase-review`      | engineering | orchestrator* | Compose `review` against the local working diff.                       |
 | `pr-review`            | engineering | orchestrator* | Compose `review` against a GitHub PR.                                  |
 | `review`               | engineering | discipline    | Shared code-review method; composed by the two above, never direct.    |
 | `design`               | engineering | discipline    | Design vocabulary (seam, depth, adapter) + smell baseline; composed.   |
-| `update-docs`          | engineering | orchestrator  | Reconcile docs with the implementation; runs as @linn.                 |
+| `update-docs`          | engineering | orchestrator* | Reconcile docs with the implementation; runs as @linn.                 |
 
 `*` = also **model-invocable** (no `disable-model-invocation`), so a delegated
-sub-agent can invoke it directly instead of only a human at the `/` prompt.
+sub-agent can invoke it directly instead of only a human at the `/` prompt. The
+unstarred `codebase-map` / `codebase-grill` / `standup` / `hotwash` stay
+human-only because each advances by asking the human questions — see §Invocation
+taxonomy.
+
+Reach is scoped **per repo**, not by this flag: `engineering/` skills exist only
+where `project-setup` symlinked them (`<repo>/.claude/skills/`), and that skill
+asks which subset to link. A repo with no engineering skills linked — a writing
+vault, say — never sees `codebase-map` in context whether it is guarded or not.
 
 ## Vault
 
