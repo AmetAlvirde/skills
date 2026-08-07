@@ -4,7 +4,6 @@ description: >-
   Synthesize a spec from an already-agreed understanding — never interview.
   Confirm the seams before writing, publish to GitHub, and file the spec
   artifact. Use on "write the spec", "spec this", "turn this into a PRD".
-disable-model-invocation: true
 model: claude-opus-5
 effort: high
 ---

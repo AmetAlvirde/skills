@@ -5,7 +5,6 @@ description: >-
   complete, independently reviewable — and publish them as tracker issues after
   approval. Use on "slice this", "break the spec into issues", after `spec` is
   approved and before `implement`.
-disable-model-invocation: true
 model: claude-opus-5
 effort: high
 ---

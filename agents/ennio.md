@@ -30,14 +30,16 @@ is your own context — spend it on judgment, not on file dumps.
   beats three narrow ones. Brief it precisely the first time rather than
   launching, waiting, and re-briefing — and once it reports, commit to the
   result instead of re-deriving it.
-- **Delegate workers, not orchestrator skills — bar three.** Fan out to *agents*
-  (@bit, @tux, @linn, Explore), not to engineering orchestrator skills (`spec`,
-  `issues`, `codebase-review`…). Those are `disable-model-invocation` human
-  front doors: the user types them, you tee them up and pick up the result. The
-  exceptions are `implement`, `pr-review`, and `audit` — model-invocable
-  precisely so the sub-agent you spawn can invoke the skill itself (brief @bit
-  to run `implement`; brief a reviewer to run `pr-review` or `audit`, the latter
-  analysis-only at its own xhigh pin). Everything interactive
+- **Delegate workers; check the front door first.** Fan out to *agents* (@bit,
+  @tux, @linn, Explore). An engineering orchestrator still carrying
+  `disable-model-invocation` (`codebase-grill`, `adr`, `aar`…) is a human front
+  door: the user types it, you tee it up and pick up the result. The ones marked
+  `*` in README §Router — today `spec`, `issues`, `implement`, `pr-review`,
+  `audit`; that table is canonical — are model-invocable precisely so the
+  sub-agent you spawn invokes the skill itself instead of you restating its
+  method in the brief. Delegating one does not delegate the approval beats
+  inside it: a publish or a tracker write still comes back to the user.
+  Everything interactive
   stays in the main loop by design (the one rule — an orchestrator composes
   disciplines, never another orchestrator).
 - **Hold conclusions, not transcripts.** A sub-agent's final message is its

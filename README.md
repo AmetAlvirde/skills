@@ -68,9 +68,10 @@ Every **engineering** skill is one of two kinds:
 
 - **Orchestrator** — a thin front door a human runs. Composes disciplines by
   prose. Defaults to `disable-model-invocation: true` (zero per-turn cost until
-  invoked). Drop that line on an orchestrator that is routinely **delegated** —
-  `implement`, `pr-review`, and `audit` are handed to a sub-agent, and a
-  sub-agent can only reach a skill the model is allowed to invoke.
+  invoked). Drop that line on one that is routinely **delegated**: a sub-agent
+  reaches only skills the model may invoke, so the flag would hide the method
+  from the very agent spawned to run it. The `*` rows in §Router are the roster
+  — kept there, not duplicated here.
 - **Discipline** — the reusable method, `user-invocable: false` (model-only,
   hidden from `/`). Rich trigger description.
 
@@ -166,8 +167,8 @@ commit.** A router that lies is the named failure mode of this repo.
 | `prototype`            | engineering | orchestrator  | Build a throwaway prototype to learn; runs as @bit, files the note.    |
 | `aar`                  | engineering | orchestrator  | Synthesize what the prototype taught — reliable vs discard.            |
 | `audit`                | engineering | orchestrator* | Bucket the prototype→reliable assurance gap (analysis only).           |
-| `spec`                 | engineering | orchestrator  | Synthesize a spec from an agreed understanding; publish + file.        |
-| `issues`               | engineering | orchestrator  | Decompose an approved spec into tracer-bullet slice issues.            |
+| `spec`                 | engineering | orchestrator* | Synthesize a spec from an agreed understanding; publish + file.        |
+| `issues`               | engineering | orchestrator* | Decompose an approved spec into tracer-bullet slice issues.            |
 | `implement`            | engineering | orchestrator* | Build one reliable slice red→green; runs as @bit, commits via @tux.    |
 | `refactor`             | engineering | orchestrator  | Diagnose a refactor → refactor-diagnosis; build via `implement`.       |
 | `adr`                  | engineering | orchestrator  | Record a qualifying architecture decision in-repo; keep the index.     |
