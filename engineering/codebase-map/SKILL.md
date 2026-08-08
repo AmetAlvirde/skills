@@ -23,13 +23,12 @@ looked up in the code, not left as open considerations.
    and keep only conclusions.
 2. **Compose `diverge`** on the idea. Lens: slant the branches toward the code —
    touched subsystems and data models, existing seams to reuse vs. build new
-   (seam per the `design` discipline's vocabulary),
-   what ADRs, contracts, and the glossary already commit to, blast radius,
-   sequencing the code's shape forces. Looking up a fact is not resolving a
-   decision: collapse what the code answers; every genuine decision stays an
-   open node for the grill. A node that contradicts an existing commitment is a
-   hotspot by definition. Anchor nodes to files and directories — pointers that
-   stay valid as the code moves.
+   (seam per the `design` discipline's vocabulary), what ADRs, contracts, and
+   the glossary already commit to, blast radius, sequencing the code's shape
+   forces. Looking up a fact is not resolving a decision: collapse what the code
+   answers; every genuine decision stays an open node for the grill. A node that
+   contradicts an existing commitment is a hotspot by definition. Anchor nodes
+   to files and directories — pointers that stay valid as the code moves.
 3. **Exit** — `diverge`'s downstream pointer and artifact apply unchanged; the
    natural next move is `codebase-grill` on the hotspots.
 
