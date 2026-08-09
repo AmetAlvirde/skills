@@ -17,6 +17,10 @@ lands.
   unless the user durably authorized otherwise.
 - **Commit what's ready.** Stage the specific paths for this unit of work; do
   not sweep unrelated changes into a commit. One coherent change per commit.
+- **A planned commit count is an estimate, not a contract.** If the work holds
+  more coherent changes than were forecast, ship them — _n_ planned and _n+m_
+  landed is the rule working, not a deviation to flag or apologise for. The
+  error runs the other way: padding or squashing to hit a number.
 - **Message says why.** State the intent, not a restatement of the diff.
 - **Confirm outward-facing actions.** Pushing and opening a PR publish work —
   confirm first unless told to proceed.
