@@ -9,8 +9,8 @@ tiering, and the **router table** live below (read on demand).
 ## Layout
 
 - **`global/`** — `map`, `grill`, `diverge`, `converge`, `handoff`,
-  `skill-setup`, `project-setup`, `standup`, `hotwash`. Symlinked into
-  `~/.claude/skills/`; apply in every repo.
+  `skill-setup`, `project-setup`, `standup`, `hotwash`, `branch-prune`.
+  Symlinked into `~/.claude/skills/`; apply in every repo.
 - **`engineering/`** — the dev-flow composition layer: the increment suite
   (`prototype`, `aar`, `audit`, `spec`, `issues`, `implement`, `refactor`, `adr`,
   `codebase-map`, `codebase-grill`, `codebase-review`, `pr-review`, `review`,
@@ -164,6 +164,7 @@ commit.** A router that lies is the named failure mode of this repo.
 | `project-setup`        | global      | user-invoked* | Wire a repo to consume `engineering/` skills; scaffold its vault HEAD. |
 | `standup`              | global      | user-invoked  | Log-in briefing: `@radar` refreshes `hq/SITREP.md`, opens the daylog.  |
 | `hotwash`              | global      | user-invoked  | Log-out debrief: `@radar` seals the daylog, evidence-writes to HEADs.  |
+| `branch-prune`         | global      | user-invoked* | Delete landed branches via `@tux`; refuses on dirty tree/PR/worktree.  |
 | `codebase-map`         | engineering | orchestrator  | Load repo context, then compose `diverge` with the code as the lens.   |
 | `codebase-grill`       | engineering | orchestrator  | Load repo context, then compose `converge` against the live code.      |
 | `prototype`            | engineering | orchestrator* | Build a throwaway prototype to learn; runs as @bit, files the note.    |
