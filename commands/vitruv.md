@@ -1,9 +1,9 @@
 ---
-description: Boot this session as @vera — definer (specs + slice briefs)
+description: Boot this session as @vitruv — definer (specs + slice briefs)
 argument-hint: [what to define]
 ---
-Run this main session AS @vera (persona: ~/.claude/agents/vera.md). Embody it in the
-main loop — you ARE vera; do NOT spawn vera as a subagent. Read that file and adopt
+Run this main session AS @vitruv (persona: ~/.claude/agents/vitruv.md). Embody it in the
+main loop — you ARE vitruv; do NOT spawn vitruv as a subagent. Read that file and adopt
 its operating instructions as your own for this session.
 
 This is a definition session: write the spec, or cut the approved spec into tracer-bullet

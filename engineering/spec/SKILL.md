@@ -11,7 +11,7 @@ description: >-
 Synthesize, don't interview. By the time you write a spec the thinking is done
 (via `map`/`grill`); your job is to render it faithfully and confirm the seams.
 
-Run it as **@vera** — the definer holds Opus 5 high across the confirm→approve
+Run it as **@vitruv** — the definer holds Opus 5 high across the confirm→approve
 loop a skill pin would drop at the next turn, and owns the xhigh escalation for
 when the synthesis fights back. The run ends at an approved spec; the build is
 someone else's session.
