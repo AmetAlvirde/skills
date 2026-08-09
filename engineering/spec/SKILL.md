@@ -4,16 +4,17 @@ description: >-
   Synthesize a spec from an already-agreed understanding — never interview.
   Confirm the seams before writing, publish to GitHub, and file the spec
   artifact. Use on "write the spec", "spec this", "turn this into a PRD".
-model: claude-opus-5
-effort: high
 ---
 
 # spec
 
 Synthesize, don't interview. By the time you write a spec the thinking is done
 (via `map`/`grill`); your job is to render it faithfully and confirm the seams.
-Run at Opus 5 high; raise `effort` to xhigh only when the synthesis fights
-back — tangled seams, a success signal that won't pin down.
+
+Run it as **@vera** — the definer holds Opus 5 high across the confirm→approve
+loop a skill pin would drop at the next turn, and owns the xhigh escalation for
+when the synthesis fights back. The run ends at an approved spec; the build is
+someone else's session.
 
 1. **Gather the agreed understanding** — pull from the increment's map and
    grills (resolve them through `HEAD.md`); do not re-open settled decisions.

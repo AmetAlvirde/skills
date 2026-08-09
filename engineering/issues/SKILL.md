@@ -5,8 +5,6 @@ description: >-
   complete, independently reviewable — and publish them as tracker issues after
   approval. Use on "slice this", "break the spec into issues", after `spec` is
   approved and before `implement`.
-model: claude-opus-5
-effort: high
 ---
 
 # issues
@@ -16,7 +14,9 @@ increment — narrow, complete, demoable or verifiable on its own, independently
 reviewable, tied to a spec requirement. The spec is the source of truth; don't
 mine scratch notes.
 
-Run at Opus 5 high — slicing is the judgment that makes the build reviewable.
+Run it as **@vera** (Opus 5 high, held across the preview→approve iteration) —
+slicing is the judgment that makes the build reviewable. Vera stops at approved
+slices and hands the build back; `implement` is a separate call the human makes.
 
 1. **Load the spec + seams** — read the approved spec (resolve through
    `HEAD.md`) and explore enough code to know the affected seams (per the

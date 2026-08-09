@@ -16,8 +16,8 @@ tiering, and the **router table** live below (read on demand).
   `codebase-map`, `codebase-grill`, `codebase-review`, `pr-review`, `review`,
   `design`, `update-docs`).
   **Project-scoped**: linked into a repo only when it opts in via `project-setup`.
-- **`agents/`** — personas (`@ennio`, `@bit`, `@tux`, `@linn`, `@radar`).
-  Symlinked into `~/.claude/agents/`.
+- **`agents/`** — personas (`@ennio`, `@bit`, `@vera`, `@tux`, `@linn`,
+  `@radar`). Symlinked into `~/.claude/agents/`.
 
 `map` and `grill` are complements — the general front doors to the `diverge` and
 `converge` disciplines, which own the method and the artifact. `skill-setup`
@@ -111,22 +111,27 @@ high while the subscription allows). **Pin exact model ids** —
 `claude-opus-5`, `claude-sonnet-5` — never a bare alias like `sonnet`, and
 never append a date suffix.
 
+A pin's **lifetime** is the deciding factor, not the skill's size: a skill
+override resets at the next user prompt, so any loop that iterates with the
+human — build, or define-and-approve — has to tier through an agent instead.
+
 Agent tiers (default → escalation when a turn is genuinely stuck):
 
 | Agent    | Role                | Default        | Escalation    |
 | -------- | ------------------- | -------------- | ------------- |
 | `@ennio` | orchestrate         | Opus 5 high    | Opus 5 xhigh  |
 | `@bit`   | implement/refactor  | Opus 5 medium  | Opus 5 high   |
+| `@vera`  | spec/issues         | Opus 5 high    | Opus 5 xhigh  |
 | `@tux`   | git                 | Sonnet 5 med   | Opus 5 high   |
 | `@linn`  | docs / vault        | Sonnet 5 med   | Opus 5 high   |
 | `@radar` | state / briefings   | Opus 5 medium  | Opus 5 high   |
 
-Single-turn skills self-tier: `codebase-map`, `codebase-grill`, `spec`, `refactor`,
-`adr`, `issues`, `codebase-review`, `pr-review` = Opus 5 high (`spec` → xhigh
-when the synthesis fights back); `audit` = Opus 5 xhigh; `aar` = Opus 5 medium. Multi-turn build skills
-carry **no** skill pin — `prototype` and `implement` run as **@bit**,
-`update-docs` as **@linn**; the `review` and `design` disciplines inherit the
-tier of the skill that composes them.
+Single-turn skills self-tier: `codebase-map`, `codebase-grill`, `refactor`,
+`adr`, `codebase-review`, `pr-review` = Opus 5 high; `audit` = Opus 5 xhigh;
+`aar` = Opus 5 medium. Multi-turn skills carry **no** skill pin and tier through
+the agent that owns them — `prototype` and `implement` run as **@bit**, `spec`
+and `issues` as **@vera**, `update-docs` as **@linn**; the `review` and `design`
+disciplines inherit the tier of the skill that composes them.
 
 Every agent **signs its tier**: each run closes with `— ran: <model-id> ·
 effort: <tier>`, plus any bump above its default and why. The model id is
@@ -141,7 +146,7 @@ rather than silently exceeding it.
 `commands/` holds one boot command per agent — a prompt template that makes the
 main session **embody** that agent (you ARE it; not spawned as a sub-agent). Each
 file symlinks to `~/.claude/commands/<name>.md` (wired once, like `agents/`), so
-`/enn`, `/bit`, `/tux`, `/linn`, `/radar` resolve in any repo. `/enn` boots the
+`/enn`, `/bit`, `/vera`, `/tux`, `/linn`, `/radar` resolve in any repo. `/enn` boots the
 orchestrator / command-post companion — **bare** `/enn` orients across hq then
 stands by; `/enn <task>` orients only at what the task names and explores lazily,
 never reading hq to re-derive a scope it was handed. The other four boot a focused
@@ -170,8 +175,8 @@ commit.** A router that lies is the named failure mode of this repo.
 | `prototype`            | engineering | orchestrator* | Build a throwaway prototype to learn; runs as @bit, files the note.    |
 | `aar`                  | engineering | orchestrator* | Synthesize what the prototype taught — reliable vs discard.            |
 | `audit`                | engineering | orchestrator* | Bucket the prototype→reliable assurance gap (analysis only).           |
-| `spec`                 | engineering | orchestrator* | Synthesize a spec from an agreed understanding; publish + file.        |
-| `issues`               | engineering | orchestrator* | Decompose an approved spec into tracer-bullet slice issues.            |
+| `spec`                 | engineering | orchestrator* | Synthesize a spec from an agreed understanding; runs as @vera.         |
+| `issues`               | engineering | orchestrator* | Cut an approved spec into slice issues; runs as @vera, stops at those. |
 | `implement`            | engineering | orchestrator* | Build one reliable slice red→green; runs as @bit, commits via @tux.    |
 | `refactor`             | engineering | orchestrator* | Diagnose a refactor → refactor-diagnosis; build via `implement`.       |
 | `adr`                  | engineering | orchestrator* | Record a qualifying architecture decision in-repo; keep the index.     |
