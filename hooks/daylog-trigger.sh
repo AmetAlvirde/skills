@@ -101,8 +101,17 @@ state_read() { # state_read <jq-path> -> value or empty
 
 state_mtime() {
   [ -f "$STATE" ] || { echo 0; return; }
-  # BSD stat (macOS) and GNU stat (the CI runner) disagree on flags.
-  stat -f %m "$STATE" 2>/dev/null || stat -c %Y "$STATE" 2>/dev/null || echo 0
+  local m
+  # GNU first, then BSD, and every answer is checked for digits before it is
+  # believed. Both halves of that are a real CI failure, not caution: GNU's
+  # `stat -f` is not BSD's. On Linux it reports *filesystem* status, so
+  # `stat -f %m` prints a mount point and exits 0 — succeeding with the wrong
+  # answer, which a `||` chain cannot catch. The gap arithmetic below then read
+  # a mount point as an epoch and every day-boundary case went wrong.
+  m=$(stat -c %Y "$STATE" 2>/dev/null) || m=""
+  case "$m" in '' | *[!0-9]*) m=$(stat -f %m "$STATE" 2>/dev/null) ;; esac
+  case "$m" in '' | *[!0-9]*) m=0 ;; esac
+  printf '%s\n' "$m"
 }
 
 state_write() { # state_write <day> <opened> <minted>
