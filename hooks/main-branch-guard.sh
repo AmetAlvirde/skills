@@ -13,12 +13,19 @@
 #
 # Guarded by default. Repos that commit to their default branch *by design* —
 # the vault, the journals — are listed in EXEMPT below. A new repo is guarded
-# from birth; if it turns out to be a straight-to-main repo, it trips the hook
-# once and you add a line here. That ordering is the point: an opt-in list
-# silently leaves every future repo unguarded.
+# from birth, seed commit included: `git init -b main` then commit is refused,
+# and the way through is `git checkout -b <branch>` before the seed. If it turns
+# out to be a straight-to-main repo, it trips the hook once and you add a line
+# here. That ordering is the point: an opt-in list silently leaves every future
+# repo unguarded.
 #
 # Fails open. If it cannot tell what repo it is in or what the default branch
 # is, it allows — a guard that blocks on its own confusion gets switched off.
+# It reads one Bash command string, so it parses per shell segment rather than
+# per line: a bare `main` in an unrelated `echo` is not a push target, and a
+# `push` chained behind a `commit` is still a push.
+#
+# hooks/main-branch-guard.test.sh covers both halves. Run it after any edit.
 
 set -u
 
@@ -93,28 +100,69 @@ if [ -z "$default" ]; then
     fi
   done
 fi
+# An unborn branch has no ref yet, so both probes above miss and a brand-new
+# repo used to fail open on its very first commit — guarded from its *second*,
+# not from birth.
+#
+# Careful here: before the first commit, the branch HEAD names is necessarily
+# both `current` and the only candidate for `default`, so accepting it whole
+# refuses the seed commit of *every* new repo — and `checkout -b` is no escape,
+# because on an unborn branch it only renames HEAD. So take it as the default
+# only when it actually looks like one. `git init -b main` is then guarded from
+# birth, with `git checkout -b <branch>` as the honest way through, while
+# `git init -b seed` is left alone.
+if [ -z "$default" ] && ! git -C "$toplevel" rev-parse --quiet --verify HEAD >/dev/null 2>&1; then
+  unborn=$(git -C "$toplevel" symbolic-ref --quiet --short HEAD 2>/dev/null)
+  configured=$(git -C "$toplevel" config --get init.defaultBranch 2>/dev/null)
+  case "$unborn" in
+    main|master) default=$unborn ;;
+    "") ;;
+    *) [ "$unborn" = "$configured" ] && default=$unborn ;;
+  esac
+fi
 [ -n "$default" ] || allow
 
-current=$(git -C "$toplevel" rev-parse --abbrev-ref HEAD 2>/dev/null)
+# `rev-parse --abbrev-ref HEAD` errors on an unborn branch; `symbolic-ref` is
+# correct there and on any normal branch. Fall back only for detached HEAD,
+# where symbolic-ref is the one that fails.
+current=$(git -C "$toplevel" symbolic-ref --quiet --short HEAD 2>/dev/null)
+[ -n "$current" ] || current=$(git -C "$toplevel" rev-parse --abbrev-ref HEAD 2>/dev/null)
 
 repo=$(basename "$toplevel")
 
-# Strip the leading `cd ... &&` so the git verb is at a predictable place.
-git_part=${cmd#*git }
+# Evaluate each shell segment on its own. Reading the whole line as a single
+# invocation caused three separate defects: a bare `main` in an unrelated `echo`
+# read as a push target and refused correct work; `push origin main; git status`
+# parsed its refspec as `main;` and was allowed through; and `commit && push
+# origin main` stopped at the first verb, so the push was never examined at all.
+# Splitting first makes each of those the same fix.
+#
+# This is not shell parsing — a separator inside a quoted string splits too. That
+# only ever produces an extra fragment to check, never a missed one, and real
+# parsing is not worth its weight in a hook that must stay fast and fail open.
+segments=$(printf '%s' "$cmd" | tr ';&|' '\n\n\n')
 
-verb=""
-for word in $git_part; do
-  case "$word" in
-    -*) continue ;;
-    -C) continue ;;
-    commit) verb=commit; break ;;
-    push) verb=push; break ;;
+while IFS= read -r seg; do
+  case "$seg" in
+    *git\ *) ;;
     *) continue ;;
   esac
-done
 
-if [ "$verb" = "commit" ] && [ "$current" = "$default" ]; then
-  deny "Refusing: this would commit straight to '$default' in $repo.
+  git_part=${seg#*git }
+
+  verb=""
+  for word in $git_part; do
+    case "$word" in
+      -*) continue ;;
+      -C) continue ;;
+      commit) verb=commit; break ;;
+      push) verb=push; break ;;
+      *) continue ;;
+    esac
+  done
+
+  if [ "$verb" = "commit" ] && [ "$current" = "$default" ]; then
+    deny "Refusing: this would commit straight to '$default' in $repo.
 
 Branch first — 'git switch -c <branch>' — then commit, push, and open a PR.
 Direct commits to a default branch are the failure this floor exists to catch;
@@ -123,37 +171,37 @@ the remote would only refuse it later, at push time.
 If $repo is a repo that works on its default branch by design, add its path to
 EXEMPT in ~/Dev/skills/hooks/main-branch-guard.sh rather than working around
 this."
-fi
-
-if [ "$verb" = "push" ]; then
-  # Everything after `push`, minus flags: [remote] [refspec...]
-  after=${git_part#*push}
-  remote=""
-  targets=""
-  for word in $after; do
-    case "$word" in
-      -*) continue ;;
-    esac
-    if [ -z "$remote" ]; then
-      remote=$word
-    else
-      targets="$targets $word"
-    fi
-  done
-
-  # No refspec named: git pushes the current branch.
-  if [ -z "$targets" ]; then
-    targets=$current
   fi
 
-  for t in $targets; do
-    dest=${t#+}
-    case "$dest" in
-      *:*) dest=${dest#*:} ;;
-    esac
-    dest=${dest#refs/heads/}
-    if [ "$dest" = "$default" ]; then
-      deny "Refusing: this would push directly to '$default' in $repo.
+  if [ "$verb" = "push" ]; then
+    # Everything after `push` in *this segment*, minus flags: [remote] [refspec...]
+    after=${git_part#*push}
+    remote=""
+    targets=""
+    for word in $after; do
+      case "$word" in
+        -*) continue ;;
+      esac
+      if [ -z "$remote" ]; then
+        remote=$word
+      else
+        targets="$targets $word"
+      fi
+    done
+
+    # No refspec named: git pushes the current branch.
+    if [ -z "$targets" ]; then
+      targets=$current
+    fi
+
+    for t in $targets; do
+      dest=${t#+}
+      case "$dest" in
+        *:*) dest=${dest#*:} ;;
+      esac
+      dest=${dest#refs/heads/}
+      if [ "$dest" = "$default" ]; then
+        deny "Refusing: this would push directly to '$default' in $repo.
 
 Push your branch instead and open a PR — 'git push -u origin <branch>' then
 'gh pr create'. A PR is the floor; on the protected repos the remote refuses
@@ -161,8 +209,11 @@ this too, and this hook catches it on the ones where it would not.
 
 If $repo works on its default branch by design, add its path to EXEMPT in
 ~/Dev/skills/hooks/main-branch-guard.sh."
-    fi
-  done
-fi
+      fi
+    done
+  fi
+done <<SEGMENTS
+$segments
+SEGMENTS
 
 allow
