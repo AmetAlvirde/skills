@@ -262,7 +262,15 @@ case "$event" in
 
     # The premature-seal half. A `## Seal` that was written before this moment
     # described a session that had not ended. Say so, once, without touching it.
-    if grep -q '^## Seal' "$path" 2>/dev/null; then
+    #
+    # Match a *filled* seal, never the heading. The vault's own daylog template
+    # ships a `## Seal` stub, so every daylog carries that heading from birth —
+    # keying on it warned that a seal predated the session on files where no
+    # seal had been written at all. A real seal states a span with real clock
+    # digits; the stub reads `**Span:** <HH:MM → HH:MM>`, and the `[^<]*` is
+    # what keeps the placeholder from counting as one.
+    if grep -A6 '^## Seal' "$path" 2>/dev/null |
+      grep -qE '\*\*Span:\*\*[^<]*[0-9]{2}:[0-9]{2}'; then
       line="$line
 - ⚠ **A \`## Seal\` above was written before this session ended.** Its span is
   not edited here; the true end of the session it was written into is
