@@ -1,4 +1,5 @@
 .DS_Store
+.pi/
 
 # Per-repo skill symlinks that project-setup creates when a repo consumes
 # engineering/ skills. The source of truth is this repo; the symlinks are not
