@@ -39,6 +39,12 @@ fresh_vault() {
   VAULT=$W/vault$n
   STATE=$W/state$n.json
   mkdir -p "$VAULT/hq" "$VAULT/_templates"
+  # A faithful replica of ~/Dev/notes/_templates/daylog.md, INCLUDING its `##
+  # Seal` stub. That section is not decoration here: an earlier fixture omitted
+  # it, and the omission hid a false positive in which every freshly minted
+  # daylog was flagged as carrying a premature seal, because the hook keyed on
+  # the heading and the template ships the heading from birth. A fixture that is
+  # tidier than the real thing tests a file that does not exist.
   cat >"$VAULT/_templates/daylog.md" <<'TPL'
 ---
 repo: hq
@@ -55,6 +61,13 @@ created: 2026-01-01T00:00-06:00 # real date+time, local CDMX with offset
 ## Log _(appended through the day — what actually moved, with its evidence)_
 
 - <time> — <what happened> (commit / artifact / note)
+
+## Seal _(hotwash: what moved, what carries — then the write-back)_
+
+**Span:** <HH:MM → HH:MM>, stating the `(+1d)` when the session ran past
+midnight.
+
+**Moved:** what actually happened this session.
 TPL
 }
 
@@ -148,6 +161,8 @@ ok "SessionEnd records the close"                  "$(has "$L" 'session closes' 
 ok "the close names its reason"                    "$(has "$L" 'logout' && echo 0 || echo 1)"
 ok "the close carries a true span"                 "$(has "$L" 'True span' && echo 0 || echo 1)"
 ok "no premature-seal warning without a seal"      "$(has "$L" 'was written before' && echo 1 || echo 0)"
+ok "the template's own Seal stub is present"       "$(has "$L" '## Seal' && echo 0 || echo 1)"
+ok "an UNFILLED seal stub is not a seal"           "$(has "$L" 'was written before' && echo 1 || echo 0)"
 
 # The 2026-08-10 shape: a seal written at 09:24 into a session still running.
 fresh_vault
