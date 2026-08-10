@@ -29,10 +29,20 @@ M=$(printf 'ma\x69n')
 pass=0
 fail=0
 
-# decide <dir> <command> [guard-override] -> ALLOWED | REFUSED
+# decide <dir> <command> [guard-override] -> ALLOWED | REFUSED | ERROR
+#
+# The hook signals through stdout, not status: it exits 0 whether it allows
+# (silence) or denies (a JSON block). So a guard that never ran also produces
+# empty stdout, and reading "empty" as ALLOWED would score every one of the
+# eleven ALLOWED cases as passing against a missing, unreadable, or syntactically
+# broken hook. That is the same fail-open shape this suite exists to catch, one
+# level up. `bash` is the last element of the pipeline, so its status is the
+# assignment's; a non-zero one means the hook did not get to decide anything.
 decide() {
-  local out
+  local out status
   out=$(cd "$1" && jq -Rn --arg c "$2" '{tool_input:{command:$c}}' | bash "${3:-$GUARD}")
+  status=$?
+  [ "$status" -ne 0 ] && { echo "ERROR(exit $status)"; return; }
   [ -z "$out" ] && { echo ALLOWED; return; }
   echo REFUSED
 }
