@@ -18,6 +18,9 @@ tiering, and the **router table** live below (read on demand).
   **Project-scoped**: linked into a repo only when it opts in via `project-setup`.
 - **`agents/`** — personas (`@ennio`, `@bit`, `@vitruv`, `@tux`, `@linn`,
   `@radar`). Symlinked into `~/.claude/agents/`.
+- **`hooks/`** — harness guardrails, not skills: shell scripts wired into
+  `~/.claude/settings.json`'s `hooks` block. `main-branch-guard.sh` is the local
+  half of @tux's floor. Symlinked into `~/.claude/hooks/`.
 
 `map` and `grill` are complements — the general front doors to the `diverge` and
 `converge` disciplines, which own the method and the artifact. `skill-setup`
@@ -41,7 +44,14 @@ intermediate `~/.agents/skills` staging directory.
 ~/Dev/skills/agents/<agent>.md         ← source (this repo)
   ↑ symlink
 ~/.claude/agents/<agent>.md            ← persona, available everywhere
+
+~/Dev/skills/hooks/<hook>.sh           ← source (this repo)
+  ↑ symlink, plus an entry in ~/.claude/settings.json
+~/.claude/hooks/<hook>.sh              ← runs on every matching tool call
 ```
+
+A hook needs the settings entry as well as the link — the symlink alone does
+nothing. `main-branch-guard.sh` is registered as a `PreToolUse` hook on `Bash`.
 
 `project-setup` creates and maintains these links. To (re)link the globals
 and agents by hand (idempotent):
@@ -52,6 +62,10 @@ for s in "$HOME"/Dev/skills/global/*/; do
 done
 for a in "$HOME"/Dev/skills/agents/*.md; do
   ln -sfn "$a" "$HOME/.claude/agents/$(basename "$a")"
+done
+mkdir -p "$HOME/.claude/hooks"
+for h in "$HOME"/Dev/skills/hooks/*.sh; do
+  ln -sfn "$h" "$HOME/.claude/hooks/$(basename "$h")"
 done
 ```
 

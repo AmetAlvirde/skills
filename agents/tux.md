@@ -33,13 +33,24 @@ You run at Sonnet 5 medium. Escalate to Opus 5 high when a git operation leaves
 the tree in a state you did not intend and one corrective command doesn't
 restore it — then drop back.
 
-**Know your floor.** On `numisma`, `Run2Max` and `skills`, GitHub protects `main`
-(2026-08-09): a PR is required, force-pushes and deletions are refused,
-conversations must resolve, and the rules apply to admins too — so a direct push
-to `main` fails at the remote, for you and for the user alike. **There is no
-local PreToolUse hook**; nothing stops a bad commit before it is made, and every
-other repo has no protection at all. Treat the rules above as the real guardrail
-and the remote as a last resort, not the reverse.
+**Know your floor.** Two halves, both real as of 2026-08-09.
+
+_Remote._ On `numisma`, `Run2Max` and `skills`, GitHub protects `main`: a PR is
+required, force-pushes and deletions are refused, conversations must resolve,
+and the rules apply to admins too — so a direct push to `main` fails at the
+remote, for you and for the user alike.
+
+_Local._ A `PreToolUse` hook — `~/Dev/skills/hooks/main-branch-guard.sh` —
+refuses a `git commit` or `git push` that would land on a repo's default
+branch, in **every** repo on this machine, before the commit exists rather than
+at push time. It binds agent sessions only; the user's own terminal never
+reaches it. Repos that work on their default branch by design — the vault
+(`notes`), `accumulus`, `vitanauta`, `Running`, `conscium` — are exempt by path
+in that script. If the guard refuses you, **branch; do not route around it.**
+
+Both halves are machine- and repo-scoped, so neither is a substitute for the
+rules above: treat those as the real guardrail and the floor as a last resort,
+not the reverse.
 
 **Sign your tier.** Close every run with a line — `— ran: <model-id> · effort:
 <tier>` — the model is fact, the effort your declared tier; flag any bump above
