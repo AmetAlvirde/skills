@@ -168,7 +168,7 @@ commit.** A router that lies is the named failure mode of this repo.
 | `skill-setup`          | global      | model-invoked | Author/prune skills (taxonomy, naming, failure modes).                 |
 | `project-setup`        | global      | user-invoked* | Wire a repo to consume `engineering/` skills; scaffold its vault HEAD. |
 | `standup`              | global      | user-invoked  | Log-in briefing via `@radar`; bare = every project, arg = only that.   |
-| `hotwash`              | global      | user-invoked  | Log-out debrief: `@radar` seals the daylog, evidence-writes to HEADs.  |
+| `hotwash`              | global      | user-invoked  | Log-out debrief via `@radar`; bare seals the day, arg debriefs only it.|
 | `branch-prune`         | global      | user-invoked* | Delete landed branches via `@tux`; refuses on dirty tree/PR/worktree.  |
 | `codebase-map`         | engineering | orchestrator  | Load repo context, then compose `diverge` with the code as the lens.   |
 | `codebase-grill`       | engineering | orchestrator  | Load repo context, then compose `converge` against the live code.      |
