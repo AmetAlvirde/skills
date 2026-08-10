@@ -38,6 +38,15 @@ Radar:
    seeded with the day's plan drawn from the sitrep. If today's daylog already
    exists — a scoped run after the morning's bare one — append the new briefing
    under its own heading; never reseed it, the appends so far are the day.
+   **Standup enriches a daylog; it is not the only thing that can create one.**
+   Any write to the day's log mints it from the template if absent, so a day is
+   never unopenable (ruled 2026-08-09,
+   [[2026-08-08-midnight-boundary-and-day-close-policy]]). And check whether
+   last night's session is still unsealed before opening a new file: under
+   **session-day filing** a session that ran past midnight belongs to the daylog
+   of the date it *began*, so a standup the next morning may be opening the
+   first file of a genuinely new day, or arriving after one that never closed —
+   say which.
 4. **Flags hygiene debt** noticed in passing to @linn — radar doesn't fix it.
 
 Return the briefing to the window. Filing (path, frontmatter, dashboard
