@@ -1,0 +1,50 @@
+name: hooks
+
+# Runs every hook suite in hooks/*.test.sh. The suites build real throwaway git
+# repos and pass identity inline, so no `git config` step is needed; `jq` is
+# their only external dependency and is preinstalled on GitHub-hosted runners.
+#
+# Fail-closed by construction. The suite this workflow was written for exists
+# because its own `decide()` once read empty stdout as ALLOWED — and the hook
+# exits 0 whether it allows (silence) or denies (JSON) — so a hook that never
+# ran scored as passing. A workflow that goes green when it found no suite, or
+# when a suite could not run, is that same fail-open one level up. So: an empty
+# glob is an error, not a no-op, and a non-zero exit from any suite fails the
+# job. A deleted hooks/main-branch-guard.sh does not go quiet — the suite gets
+# ERROR on every case that invokes it and exits non-zero.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run hook suites
+        shell: bash
+        run: |
+          set -uo pipefail
+          shopt -s nullglob
+          suites=(hooks/*.test.sh)
+
+          if [ ${#suites[@]} -eq 0 ]; then
+            echo "No hooks/*.test.sh found. Refusing to report green on nothing."
+            exit 1
+          fi
+
+          status=0
+          for suite in "${suites[@]}"; do
+            echo "== $suite"
+            if bash "$suite"; then
+              echo "== $suite: ok"
+            else
+              echo "== $suite: FAILED (exit $?)"
+              status=1
+            fi
+            echo
+          done
+          exit "$status"
