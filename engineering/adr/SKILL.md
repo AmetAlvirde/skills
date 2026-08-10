@@ -16,7 +16,11 @@ reverse, surprising without context, the result of a real trade-off. Prototype
 shortcuts, ordinary module extractions, and preferences without a trade-off do
 not qualify.
 
-Run at Opus 5 high — the judgment is whether the decision qualifies and why.
+Run it as **@vitruv** — an ADR is definition work, the same as `spec` and
+`issues`: a record of what must be true, written for agents who will have none
+of this context. The definer holds Opus 5 high, and what the tier buys here is
+the three-test gate itself — whether the decision qualifies, and why. Declining
+is a finished run. Git lands via @tux.
 
 1. **Qualify or decline** — apply the three-test gate; if it fails, say so and
    don't write one. Qualifying shapes: architectural form, integration patterns,
