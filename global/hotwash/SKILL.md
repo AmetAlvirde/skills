@@ -72,7 +72,30 @@ Radar:
    silent gap that later reads as a quiet day.
 3. **Seals the session's daylog** — appends the close: what moved, what carries
    to tomorrow, and the session's true span. The daylog keeps forever — it's the
-   authored day journal. **A scoped run does not seal.** *Moved* and *carries to
+   authored day journal.
+
+   **Ask once, before sealing: is the day actually ending, or are you carrying
+   on?** One question, answered in a word. *Stopping* → seal. *Still working* →
+   **write a stash instead** (below), report the day as still open, and write
+   back nothing.
+
+   **Why an intent check and not a state check.** 2026-08-10 was sealed at
+   `09:24` into a session the seal itself records as **still open**, and the day
+   then ran seven more hours — a third failure shape, distinct from
+   cold-sealing and from never-closing: *a day that closed early*. The obvious
+   fix — refuse to seal while the session is open — **cannot be built.** This is
+   a log-out ritual invoked *from inside* the session it closes, so at every
+   legitimate hotwash the session is open too; a state check refuses all of them
+   and distinguishes nothing. **The state does not vary between a good hotwash
+   and a premature one. The intent does.** That is the only thing worth gating
+   on, and only the human holds it.
+
+   A `SessionEnd` hook (`daylog-trigger`, skills#11) stamps the true close into
+   the daylog's `## Session ledger` and flags a seal that predates it. **That
+   makes a premature seal visible after the fact; this question is what keeps it
+   from happening.** Neither replaces the other.
+
+   **A scoped run does not seal.** *Moved* and *carries to
    tomorrow* are claims about the whole day, and a run that read one project
    cannot make them. It appends its debrief under its own heading, leaves
    `## Seal` unwritten, and says in the report that the day is still open. A day
@@ -95,11 +118,20 @@ Radar:
    currency is individual.
 5. **Flags hygiene debt** to @linn.
 
-## The stash — when a full hotwash is too expensive
+## The stash — when a full hotwash is too expensive, or too early
 
-At `01:00` the ritual above is too heavy to run and too easy to defer, and
-deferring it is what loses the irrecoverable half. So when the human notices
-it's late, **three lines appended to the open daylog** — what I'm mid-way
+**Two ways in, and the second is the one that was missing.** (a) At `01:00` the
+ritual is too heavy to run and too easy to defer. (b) **The day is not over** —
+step 3's question was answered *still working*. A hotwash run mid-session **is
+a stash**: it wants the decayable half written down and the day left open,
+which is exactly what a stash is for and exactly what a seal is not.
+
+That second entrance existed as a concept here and nothing routed to it, which
+is how 2026-08-10 got a `09:24` seal on a day that ran to evening. **A ritual
+with the right shape available and no path into it is not a ritual that
+offers it.**
+
+In either case: **three lines appended to the open daylog** — what I'm mid-way
 through · what I just decided and why · what I'd start with next — and the full
 seal waits for the actual stop.
 
