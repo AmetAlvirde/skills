@@ -9,7 +9,8 @@ tiering, and the **router table** live below (read on demand).
 ## Layout
 
 - **`global/`** — `map`, `grill`, `diverge`, `converge`, `handoff`,
-  `skill-setup`, `project-setup`, `standup`, `hotwash`, `branch-prune`.
+  `skill-setup`, `project-setup`, `standup`, `hotwash`, `branch-prune`,
+  `unslop`.
   Symlinked into `~/.claude/skills/`; apply in every repo.
 - **`engineering/`** — the dev-flow composition layer: the increment suite
   (`prototype`, `aar`, `audit`, `spec`, `issues`, `implement`, `refactor`, `adr`,
@@ -48,7 +49,19 @@ intermediate `~/.agents/skills` staging directory.
 ~/Dev/skills/hooks/<hook>.sh           ← source (this repo)
   ↑ symlink, plus an entry in ~/.claude/settings.json
 ~/.claude/hooks/<hook>.sh              ← runs on every matching tool call
+
+~/Dev/skills/global/unslop/VOICE.md    ← source (this repo)
+  ↑ @-import, not a symlink
+~/.claude/CLAUDE.md                    ← loaded every turn, in every project
 ```
+
+**The one always-loaded file.** `global/unslop/VOICE.md` is the voice contract:
+the scope clause plus the dozen rules that catch a model mid-reply. It is not a
+skill, because a skill only enters context when the model calls it, and how
+every message reads cannot depend on that decision. `~/.claude/CLAUDE.md`
+imports it with a single `@` line, so this repo stays the source of truth. The
+full 31-pattern catalogue stays in the `unslop` skill and loads on demand, which
+keeps it off orchestration turns entirely.
 
 A hook needs the settings entry as well as the link — the symlink alone does
 nothing. `main-branch-guard.sh` is registered as a `PreToolUse` hook on `Bash`.
@@ -67,6 +80,8 @@ mkdir -p "$HOME/.claude/hooks"
 for h in "$HOME"/Dev/skills/hooks/*.sh; do
   ln -sfn "$h" "$HOME/.claude/hooks/$(basename "$h")"
 done
+grep -q 'unslop/VOICE.md' "$HOME/.claude/CLAUDE.md" 2>/dev/null ||
+  echo '@~/Dev/skills/global/unslop/VOICE.md' >> "$HOME/.claude/CLAUDE.md"
 ```
 
 To wire a repo to the `engineering/` skills, run `project-setup` from that
@@ -144,8 +159,9 @@ Single-turn skills self-tier: `codebase-map`, `codebase-grill`, `refactor`,
 `adr`, `codebase-review`, `pr-review` = Opus 5 high; `audit` = Opus 5 xhigh;
 `aar` = Opus 5 medium. Multi-turn skills carry **no** skill pin and tier through
 the agent that owns them — `prototype` and `implement` run as **@bit**, `spec`
-and `issues` as **@vitruv**, `update-docs` as **@linn**; the `review` and
-`design` disciplines inherit the tier of the skill that composes them.
+and `issues` as **@vitruv**, `update-docs` as **@linn**; the `review`,
+`design`, and `unslop` disciplines inherit the tier of the skill that composes
+them.
 
 Every agent **signs its tier**: each run closes with `— ran: <model-id> ·
 effort: <tier>`, plus any bump above its default and why. The model id is
@@ -184,6 +200,7 @@ commit.** A router that lies is the named failure mode of this repo.
 | `standup`              | global      | user-invoked  | Log-in briefing via `@radar`; bare = every project, arg = only that.   |
 | `hotwash`              | global      | user-invoked  | Log-out debrief via `@radar`; bare seals the day, arg debriefs only it.|
 | `branch-prune`         | global      | user-invoked* | Delete landed branches via `@tux`; refuses on dirty tree/PR/worktree.  |
+| `unslop`               | global      | model-invoked | Cut AI tells from user-facing prose; catalogue behind `VOICE.md`.      |
 | `codebase-map`         | engineering | orchestrator  | Load repo context, then compose `diverge` with the code as the lens.   |
 | `codebase-grill`       | engineering | orchestrator  | Load repo context, then compose `converge` against the live code.      |
 | `prototype`            | engineering | orchestrator* | Build a throwaway prototype to learn; runs as @bit, files the note.    |

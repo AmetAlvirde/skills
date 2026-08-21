@@ -21,9 +21,12 @@ Run from the target repo's root (its path is cwd).
 2. **Link the globals once** (idempotent) — each `~/Dev/skills/global/<s>` →
    `~/.claude/skills/<s>`. Skip any that already resolve there. This is the whole
    `global/` tier (`map`, `grill`, `diverge`, `converge`, `handoff`,
-   `skill-setup`, `project-setup`) plus agents: `~/Dev/skills/agents/<a>.md` →
-   `~/.claude/agents/<a>.md` and commands: `~/Dev/skills/commands/<c>.md` →
-   `~/.claude/commands/<c>.md`.
+   `skill-setup`, `project-setup`, `unslop`) plus agents:
+   `~/Dev/skills/agents/<a>.md` → `~/.claude/agents/<a>.md` and commands:
+   `~/Dev/skills/commands/<c>.md` → `~/.claude/commands/<c>.md`. Also ensure
+   `~/.claude/CLAUDE.md` carries the voice-contract import (append
+   `@~/Dev/skills/global/unslop/VOICE.md` if absent) — an `@` import, not a
+   symlink, and the only always-loaded file in the set.
 3. **Link the engineering skills per-skill** into a **real** dir — create
    `<repo>/.claude/skills/` if absent, then for each chosen skill
    `ln -sfn ~/Dev/skills/engineering/<s> <repo>/.claude/skills/<s>`. Per-skill,
