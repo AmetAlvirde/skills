@@ -6,12 +6,12 @@
 # Two halves, because the guard failed in two different places for two different
 # reasons:
 #
-#   Parsing — the hook reads one Bash command string, and it used to read the
+#   Parsing. The hook reads one Bash command string, and it used to read the
 #   whole line as a single invocation. Cases here chain commands with ; && || to
 #   pin down which segment a verb and a refspec belong to.
 #
-#   Repo state — every earlier test ran in a repo that already had commits, which
-#   is exactly why the unborn-branch fail-open survived. Cases here build real
+#   Repo state. Every earlier test ran in a repo that already had commits,
+#   which is exactly why the unborn-branch fail-open survived. Cases here build real
 #   throwaway repos, seeded and unseeded.
 #
 # The trigger words are assembled from escapes (see V below) so that running this
@@ -101,7 +101,7 @@ check ALLOWED "switch -C, then $C"           "$R" "git switch -C fix/x && git $C
 check ALLOWED "branch, $C, $C again"         "$R" "git switch -c fix/x && git $C -m y && git $C -m z"
 
 # Only a verb that creates AND moves HEAD counts. git will not create a branch
-# that already exists, so a branch born mid-command cannot be '$M' — which is
+# that already exists, so a branch born mid-command cannot be '$M', which is
 # exactly the guarantee a bare switch to an existing branch does not give.
 check REFUSED "switch to an existing branch" "$R" "git switch exploration/x && git $C -m y"
 check REFUSED "$C first, branch after"       "$R" "git $C -m y && git switch -c fix/x"

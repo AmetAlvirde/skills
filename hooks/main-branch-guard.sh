@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# main-branch-guard — the local half of the PR floor.
+# main-branch-guard: the local half of the PR floor.
 #
 # A PreToolUse hook on Bash. Refuses a `git commit` or `git push` that would
 # land directly on a repo's default branch, so an agent has to branch and open
@@ -7,12 +7,12 @@
 # time and only on the repos where it is configured; this catches it before the
 # commit exists, in every repo on this machine.
 #
-# It binds Claude sessions only — commands you type in your own terminal never
+# It binds Claude sessions only. Commands you type in your own terminal never
 # reach a PreToolUse hook. That is deliberate: the hook is the floor under
 # agents, `enforce_admins: true` on the remote is the floor under you.
 #
-# Guarded by default. Repos that commit to their default branch *by design* —
-# the vault, the journals — are listed in EXEMPT below. A new repo is guarded
+# Guarded by default. Repos that commit to their default branch *by design*,
+# the vault and the journals, are listed in EXEMPT below. A new repo is guarded
 # from birth, seed commit included: `git init -b main` then commit is refused,
 # and the way through is `git checkout -b <branch>` before the seed. If it turns
 # out to be a straight-to-main repo, it trips the hook once and you add a line
@@ -20,7 +20,7 @@
 # repo unguarded.
 #
 # Fails open. If it cannot tell what repo it is in or what the default branch
-# is, it allows — a guard that blocks on its own confusion gets switched off.
+# is, it allows. A guard that blocks on its own confusion gets switched off.
 # It reads one Bash command string, so it parses per shell segment rather than
 # per line: a bare `main` in an unrelated `echo` is not a push target, and a
 # `push` chained behind a `commit` is still a push.
@@ -101,12 +101,12 @@ if [ -z "$default" ]; then
   done
 fi
 # An unborn branch has no ref yet, so both probes above miss and a brand-new
-# repo used to fail open on its very first commit — guarded from its *second*,
-# not from birth.
+# repo used to fail open on its very first commit, guarded from its *second*
+# and not from birth.
 #
 # Careful here: before the first commit, the branch HEAD names is necessarily
 # both `current` and the only candidate for `default`, so accepting it whole
-# refuses the seed commit of *every* new repo — and `checkout -b` is no escape,
+# refuses the seed commit of *every* new repo, and `checkout -b` is no escape,
 # because on an unborn branch it only renames HEAD. So take it as the default
 # only when it actually looks like one. `git init -b main` is then guarded from
 # birth, with `git checkout -b <branch>` as the honest way through, while
@@ -144,7 +144,7 @@ repo=$(basename "$toplevel")
 # harmless only when the command really is git. `gh issue create --body "... &&
 # git commit ..."` splits into a fragment that *is* a git commit as far as the
 # guard can see, and the guard refuses a command that touches no repository at
-# all — which is how this was found, by being unable to file the issue about it.
+# all, which is how this was found: by being unable to file the issue about it.
 #
 # Requiring the fragment to begin with git is not enough on its own: the
 # fragment after the quoted `&&` above begins with git too. Quote state is the
@@ -196,10 +196,10 @@ segments=$(printf '%s' "$cmd" | awk '
 # makes this safe rather than a hole: git refuses to create a branch that
 # already exists, so a branch born here is necessarily not the default one, and
 # a commit after it cannot be a commit to the default branch. A bare `git switch
-# <existing>` gets no such guarantee — the existing branch could be `main` — so
-# it does not count, and `git branch x && git switch x && git commit` is still
-# refused. Order matters and comes for free: the flag is read in segment order,
-# so `git commit && git switch -c x` is refused exactly as before.
+# <existing>` gets no such guarantee, since the existing branch could be `main`,
+# so it does not count, and `git branch x && git switch x && git commit` is
+# still refused. Order matters and comes for free: the flag is read in segment
+# order, so `git commit && git switch -c x` is refused exactly as before.
 branched=no
 
 while IFS= read -r seg; do
@@ -253,7 +253,7 @@ while IFS= read -r seg; do
   if [ "$verb" = "commit" ] && [ "$current" = "$default" ] && [ "$branched" = no ]; then
     deny "Refusing: this would commit straight to '$default' in $repo.
 
-Branch first — 'git switch -c <branch>' — then commit, push, and open a PR.
+Branch first: 'git switch -c <branch>', then commit, push, and open a PR.
 Direct commits to a default branch are the failure this floor exists to catch;
 the remote would only refuse it later, at push time.
 
@@ -296,7 +296,7 @@ this."
       if [ "$dest" = "$default" ]; then
         deny "Refusing: this would push directly to '$default' in $repo.
 
-Push your branch instead and open a PR — 'git push -u origin <branch>' then
+Push your branch instead and open a PR: 'git push -u origin <branch>' then
 'gh pr create'. A PR is the floor; on the protected repos the remote refuses
 this too, and this hook catches it on the ones where it would not.
 

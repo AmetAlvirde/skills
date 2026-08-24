@@ -3,7 +3,7 @@
 #
 # Run: bash hooks/daylog-trigger.test.sh
 #
-# The hook signals through the filesystem, not through status — it exits 0 on
+# The hook signals through the filesystem, not through status. It exits 0 on
 # every path by design, so "the hook exited 0" proves nothing at all. Two things
 # keep this suite from going green against a hook that is missing, unreadable or
 # syntactically broken:
@@ -12,7 +12,7 @@
 #      127 for a missing file and 126 for an unexecutable one.
 #   2. Most cases assert on content the hook must have *written*. A hook that
 #      never ran creates no daylog, so it cannot score the positive cases. The
-#      suite is deliberately not all-negative — an all-negative suite for a hook
+#      suite is deliberately not all-negative: an all-negative suite for a hook
 #      whose correct behaviour is often "do nothing" would pass on an empty file.
 #
 # That is the same fail-open shape main-branch-guard.test.sh was written to
@@ -134,7 +134,7 @@ end_logout='{"hook_event_name":"SessionEnd","session_id":"abcdef1234","reason":"
 end_clear='{"hook_event_name":"SessionEnd","session_id":"abcdef1234","reason":"clear"}'
 
 # ------------------------------------------------------ scope: what mints ----
-echo "scope — a session that only reads leaves nothing behind"
+echo "scope: a session that only reads leaves nothing behind"
 
 fresh_vault
 fire "$START"; s=$?
@@ -151,7 +151,7 @@ fire "$w_gitstatus"
 ok "a read-only git command mints nothing"         "$([ ! -f "$(log_for)" ] && echo 0 || echo 1)"
 
 # --------------------------------------------------- the append, and once ----
-echo "append — the first authoring action opens the day, exactly once"
+echo "append: the first authoring action opens the day, exactly once"
 
 fire "$w_write"; s=$?
 L=$(log_for)
@@ -180,7 +180,7 @@ fire "$w_write"
 ok "PostToolUse with no SessionStart still mints"  "$([ -f "$(log_for)" ] && echo 0 || echo 1)"
 
 # ------------------------------------------------------------- the close ----
-echo "close — the seal end, which is a different bug"
+echo "close: the seal end, which is a different bug"
 
 fresh_vault
 fire "$START"; fire "$w_write"; fire "$end_logout"
@@ -213,7 +213,7 @@ fire "$START"; fire "$end_logout"
 ok "a read-only session closes silently"           "$([ ! -f "$(log_for)" ] && echo 0 || echo 1)"
 
 # ----------------------------------------------------------- the boundary ----
-echo "boundary — a day is a working session, not a calendar date (§3.1)"
+echo "boundary: a day is a working session, not a calendar date (§3.1)"
 
 # Past midnight, still working: the date changed, the machine never went idle.
 fresh_vault
@@ -235,10 +235,10 @@ ok "and clears the minted flag"                    "$([ "$(jq -r .minted "$STATE
 
 # ------------------------------------------------------- the idle clock ----
 # The clock answers "how long since work stopped". Every event that is not work
-# must leave it alone — a session end refreshing it is the inversion that froze
+# must leave it alone. A session end refreshing it is the inversion that froze
 # the session-day, so this asserts on the mtime directly rather than on any
 # downstream symptom.
-echo "the idle clock — measured from work, never from the hook's own footprints"
+echo "the idle clock: measured from work, never from the hook's own footprints"
 
 fresh_vault
 fire "$START"; fire "$w_write"
@@ -273,7 +273,7 @@ ok "and the next start still rolls the day over"   "$([ "$(jq -r .day "$STATE")"
 # `opened` is the day's; the close line names one session and calls its span
 # true. Every session after the day's first therefore reported a start it never
 # had, and the ledger carried no open line that could contradict it.
-echo "the span — a session's close reports the session's own start"
+echo "the span: a session's close reports the session's own start"
 
 fresh_vault
 seed_daylog "$TODAY"
@@ -288,7 +288,7 @@ ok "and its span does not claim the day's start"   "$(line_has "$(close_line "$L
 ok "opens and closes pair one to one"              "$([ "$(count "$LOG" "$OPENS")" -eq "$(count "$LOG" "$CLOSES")" ] && echo 0 || echo 1)"
 
 # `(+1d)` belongs to a session that really crossed midnight, which is a fact
-# about when the session opened — not about which date its session-day is
+# about when the session opened, not about which date its session-day is
 # filed under.
 fresh_vault
 seed_daylog "$YESTERDAY"
@@ -312,7 +312,7 @@ fire "$end_logout"
 ok "a session that filed no open files no close"   "$([ "$(count "$(log_for "$TODAY")" "$CLOSES")" -eq 0 ] && echo 0 || echo 1)"
 
 # ---------------------------------------------------------- failing open ----
-echo "failing open — a record is not a floor"
+echo "failing open: a record is not a floor"
 
 fresh_vault
 rm -rf "$VAULT/_templates"
@@ -338,7 +338,7 @@ ok "an unhandled event is a no-op"                 "$([ $s -eq 0 ] && echo 0 || 
 # The suite's own subject. If the hook is gone, every case above that asserts on
 # written content already fails; these two make the reason explicit rather than
 # leaving a wall of unexplained FAILs.
-echo "failing closed — the suite must not pass without its subject"
+echo "failing closed: the suite must not pass without its subject"
 
 fresh_vault
 fire "$w_write" "$W/no-such-hook.sh"; s=$?

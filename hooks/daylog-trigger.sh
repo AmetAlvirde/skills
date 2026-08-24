@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# daylog-trigger — the event the daylog convention was waiting on.
+# daylog-trigger: the event the daylog convention was waiting on.
 #
 # `_conventions.md` §3.1 rules that a daylog is "minted on first append". That
 # says what happens *when someone writes*; nothing made anyone write. Eight
@@ -10,20 +10,20 @@
 # Three hooks, one script, dispatched on hook_event_name:
 #
 #   SessionStart   Opens or continues the session-day in the state file.
-#                  Writes NOTHING to the vault — a session that only reads must
+#                  Writes NOTHING to the vault: a session that only reads must
 #                  not leave a daylog behind.
 #   PostToolUse    On the session-day's first *authoring* action, mints today's
 #                  daylog if absent and records that the session opened. This is
 #                  the lazy half: the trigger is a session start, the append
 #                  waits for evidence that the session did something.
 #   SessionEnd     Stamps the true close time. This is the half that answers the
-#                  premature seal — 2026-08-10 was sealed at 09:24 into a session
+#                  premature seal. 2026-08-10 was sealed at 09:24 into a session
 #                  the seal itself records as still open.
 #
 # What it will not do. It never edits authored prose. `## Log` and `## Seal`
 # belong to the human and to /hotwash; this script owns exactly one section,
 # `## Session ledger`, and only ever appends to it. A seal written early is not
-# rewritten — it is superseded by a ledger line carrying the true span, so the
+# rewritten. A ledger line carrying the true span supersedes it, so the
 # discrepancy becomes visible instead of silent.
 #
 # A day is a working session, not a calendar date (§3.1). A session that runs
@@ -39,7 +39,7 @@
 # had already been sealed.
 #
 # Fails open, always. Every path exits 0. A hook that can wedge a session gets
-# switched off, and a daylog is a record, not a floor — losing a line is a far
+# switched off, and a daylog is a record, not a floor. Losing a line is a far
 # cheaper failure than losing the ability to work. Where it cannot act it says
 # so on stderr and gets out of the way.
 #
@@ -51,8 +51,8 @@ VAULT=${DAYLOG_VAULT:-$HOME/Dev/notes}
 STATE=${DAYLOG_STATE:-$HOME/.claude/state/daylog-session.json}
 # The idle clock, and nothing else. It carries no content; only its mtime is
 # ever read. It is a separate file from $STATE because $STATE is rewritten on
-# paths that are not activity — a session start that records nothing but its own
-# id, for one — and every rewrite would otherwise reset the clock that decides
+# paths that are not activity, a session start that records nothing but its own
+# id being one, and every rewrite would otherwise reset the clock that decides
 # whether the machine has been idle.
 ACTIVITY=${DAYLOG_ACTIVITY:-$STATE.activity}
 NEW_DAY_GAP_HOURS=${DAYLOG_NEW_DAY_GAP_HOURS:-4}
@@ -69,14 +69,14 @@ input=$(cat 2>/dev/null) || done_ok
 # One jq for the whole payload. PostToolUse fires on every edit and every Bash
 # call, so this path is walked constantly; parsing field-by-field cost five
 # subprocesses per tool call for no benefit. @tsv escapes embedded tabs and
-# newlines, which is harmless here — every consumer below does substring or
+# newlines, which is harmless here: every consumer below does substring or
 # equality matching, never column arithmetic.
 fields=$(printf '%s' "$input" |
   jq -r '[.hook_event_name // "", .session_id // "", .tool_name // "",
           .tool_input.command // "", .reason // ""] | @tsv' 2>/dev/null)
 [ -n "$fields" ] || done_ok
 # Read on a UNIT SEPARATOR, not on the tab @tsv emits. Tab is IFS whitespace, so
-# bash collapses runs of it and drops empty fields entirely — a SessionEnd
+# bash collapses runs of it and drops empty fields entirely. A SessionEnd
 # payload (no tool_name, no command) then shifts `reason` into `tool`, and the
 # close silently reads as an unhandled event. @tsv has already escaped any real
 # tab or newline inside a command, so every tab left in the string is a
@@ -134,7 +134,7 @@ state_mtime() {
   # GNU first, then BSD, and every answer is checked for digits before it is
   # believed. Both halves of that are a real CI failure, not caution: GNU's
   # `stat -f` is not BSD's. On Linux it reports *filesystem* status, so
-  # `stat -f %m` prints a mount point and exits 0 — succeeding with the wrong
+  # `stat -f %m` prints a mount point and exits 0, succeeding with the wrong
   # answer, which a `||` chain cannot catch. The gap arithmetic below then read
   # a mount point as an epoch and every day-boundary case went wrong.
   m=$(stat -c %Y "$f" 2>/dev/null) || m=""
@@ -168,7 +168,7 @@ state_write() { # state_write <day> <opened> <minted> <session> <session_opened>
     mv "$STATE.tmp" "$STATE" 2>/dev/null
 }
 
-# `.minted` as a literal true/false, never empty — state_write takes it as JSON.
+# `.minted` as a literal true/false, never empty: state_write takes it as JSON.
 state_minted() {
   [ "$(state_read '.minted')" = "true" ] && { echo true; return; }
   echo false
@@ -192,7 +192,7 @@ is_new_day() {
 daylog_path() { printf '%s/hq/%s-daylog.md\n' "$VAULT" "$1"; }
 
 # Mint from the vault's own template so the frontmatter stays schema-correct.
-# If the template is missing we still mint — a daylog with a hand-built header
+# If the template is missing we still mint. A daylog with a hand-built header
 # beats no daylog, which is the entire failure this script exists to end.
 mint() { # mint <path> <day>
   local path=$1 day=$2 template="$VAULT/_templates/daylog.md"
@@ -226,7 +226,7 @@ append_ledger() { # append_ledger <path> <line>
 
 # Is this tool call evidence that the session did something worth a record?
 # Edits and writes obviously are. A Bash call is only counted when it mutates
-# git or the tracker — otherwise `ls` would mint a daylog for a session that
+# git or the tracker. Otherwise `ls` would mint a daylog for a session that
 # asked one question, which is exactly the over-minting the SessionStart-only
 # design was criticised for.
 is_authoring() { # is_authoring <tool_name> <bash-command>
@@ -269,12 +269,12 @@ case "$event" in
     # Hot path: this session's open line is already filed. grep rather than jq,
     # so the common case is one cheap read and a touch. Keying on `logged`
     # rather than `minted` is what lets a second session of an already-minted
-    # day still record its own open — under the old key it short-circuited here
+    # day still record its own open. Under the old key it short-circuited here
     # and the day ended with more closes in the ledger than opens.
     grep -q "\"logged\": *\"$session\"" "$STATE" 2>/dev/null &&
       { mark_activity; done_ok; }
 
-    # A PostToolUse can arrive with no SessionStart behind it — a hook installed
+    # A PostToolUse can arrive with no SessionStart behind it: a hook installed
     # mid-session, or a state file wiped. Open the day here rather than skip it.
     day=$(state_read '.day')
     opened=$(state_read '.opened')
@@ -312,7 +312,7 @@ case "$event" in
     ;;
 
   SessionEnd)
-    # `clear` and `resume` end a session id, not a working day — §3.1 files one
+    # `clear` and `resume` end a session id, not a working day. §3.1 files one
     # unbroken working session as one daylog, and /clear does not end one.
     case "$reason" in
       clear|resume|compact) done_ok ;;
@@ -351,8 +351,8 @@ case "$event" in
     # described a session that had not ended. Say so, once, without touching it.
     #
     # Match a *filled* seal, never the heading. The vault's own daylog template
-    # ships a `## Seal` stub, so every daylog carries that heading from birth —
-    # keying on it warned that a seal predated the session on files where no
+    # ships a `## Seal` stub, so every daylog carries that heading from birth,
+    # and keying on it warned that a seal predated the session on files where no
     # seal had been written at all. A real seal states a span with real clock
     # digits; the stub reads `**Span:** <HH:MM → HH:MM>`, and the `[^<]*` is
     # what keeps the placeholder from counting as one.
