@@ -32,6 +32,12 @@
 # for NEW_DAY_GAP_HOURS. Date-change alone would split every late night in two;
 # idleness alone would split a day around a long meeting.
 #
+# Idle means "since work stopped", measured from the last *authoring* action and
+# from nothing else. Measuring it from the hook's own last run instead is what
+# kept the session-day frozen: every session start and every session end
+# refreshed the clock, so the gap never opened and closes filed into a day that
+# had already been sealed.
+#
 # Fails open, always. Every path exits 0. A hook that can wedge a session gets
 # switched off, and a daylog is a record, not a floor — losing a line is a far
 # cheaper failure than losing the ability to work. Where it cannot act it says
@@ -43,6 +49,12 @@ set -u
 
 VAULT=${DAYLOG_VAULT:-$HOME/Dev/notes}
 STATE=${DAYLOG_STATE:-$HOME/.claude/state/daylog-session.json}
+# The idle clock, and nothing else. It carries no content; only its mtime is
+# ever read. It is a separate file from $STATE because $STATE is rewritten on
+# paths that are not activity — a session start that records nothing but its own
+# id, for one — and every rewrite would otherwise reset the clock that decides
+# whether the machine has been idle.
+ACTIVITY=${DAYLOG_ACTIVITY:-$STATE.activity}
 NEW_DAY_GAP_HOURS=${DAYLOG_NEW_DAY_GAP_HOURS:-4}
 
 LEDGER_HEADING='## Session ledger _(appended by `daylog-trigger`, never by hand)_'
@@ -89,18 +101,35 @@ today() { date "+%Y-%m-%d"; }
 now_epoch() { date "+%s"; }
 
 # ------------------------------------------------------------------ state ----
-# last_activity is the state file's mtime rather than a JSON field, so the hot
-# path (PostToolUse on an already-minted day) is one touch instead of a jq
-# rewrite. PostToolUse fires on every edit; it has to stay nearly free.
+# Last activity is a file's mtime rather than a JSON field, so the hot path
+# (PostToolUse on a session whose open is already filed) is one touch instead of
+# a jq rewrite. PostToolUse fires on every edit; it has to stay nearly free.
+#
+# Exactly one path may touch $ACTIVITY: the PostToolUse authoring path below.
+# The clock answers "how long since work stopped", so anything that is not work
+# must leave it alone. A SessionEnd touching it is the sharpest version of the
+# mistake: the strongest evidence that work has stopped would refresh the very
+# timestamp that decides whether work has stopped, and the next start would then
+# read as continuous. That inversion is what kept the session-day from ever
+# rolling over.
 state_dir=$(dirname "$STATE")
+
+# Work happened, now. The only writer of the idle clock.
+mark_activity() { touch "$ACTIVITY" 2>/dev/null || true; }
 
 state_read() { # state_read <jq-path> -> value or empty
   [ -f "$STATE" ] || return 0
   jq -r "$1 // empty" "$STATE" 2>/dev/null
 }
 
+# The idle clock's reading. Falls back to $STATE's own mtime when $ACTIVITY does
+# not exist yet, which is what an install predating the split has: the state
+# file's mtime is then the best estimate available, and one stale reading is
+# cheaper than declaring a new day on every first run.
 state_mtime() {
-  [ -f "$STATE" ] || { echo 0; return; }
+  local f=$ACTIVITY
+  [ -f "$f" ] || f=$STATE
+  [ -f "$f" ] || { echo 0; return; }
   local m
   # GNU first, then BSD, and every answer is checked for digits before it is
   # believed. Both halves of that are a real CI failure, not caution: GNU's
@@ -108,18 +137,45 @@ state_mtime() {
   # `stat -f %m` prints a mount point and exits 0 — succeeding with the wrong
   # answer, which a `||` chain cannot catch. The gap arithmetic below then read
   # a mount point as an epoch and every day-boundary case went wrong.
-  m=$(stat -c %Y "$STATE" 2>/dev/null) || m=""
-  case "$m" in '' | *[!0-9]*) m=$(stat -f %m "$STATE" 2>/dev/null) ;; esac
+  m=$(stat -c %Y "$f" 2>/dev/null) || m=""
+  case "$m" in '' | *[!0-9]*) m=$(stat -f %m "$f" 2>/dev/null) ;; esac
   case "$m" in '' | *[!0-9]*) m=0 ;; esac
   printf '%s\n' "$m"
 }
 
-state_write() { # state_write <day> <opened> <minted>
+# Six fields, in two scopes, and the split is the whole point. `day` / `opened` /
+# `minted` describe the session-*day*; `session` / `session_opened` / `logged`
+# describe the one session running now. Reporting a day-scoped `opened` as a
+# session's own start is what made every close after the day's first claim a
+# time it never had.
+#
+#   day             the session-day this state belongs to
+#   opened          when that day began
+#   minted          whether the day's daylog exists
+#   session         id of the session that owns the two fields below
+#   session_opened  when THAT session began
+#   logged          id of the session whose open line is already in the ledger
+#
+# `logged` implies `minted`: a session's open line can only be written after the
+# daylog exists. That is what lets the hot path settle both with one grep.
+state_write() { # state_write <day> <opened> <minted> <session> <session_opened> <logged>
   mkdir -p "$state_dir" 2>/dev/null || { note "cannot create $state_dir"; return 1; }
   jq -n --arg day "$1" --arg opened "$2" --argjson minted "$3" \
-    '{day: $day, opened: $opened, minted: $minted}' >"$STATE.tmp" 2>/dev/null &&
+    --arg session "$4" --arg session_opened "$5" --arg logged "$6" \
+    '{day: $day, opened: $opened, minted: $minted,
+      session: $session, session_opened: $session_opened, logged: $logged}' \
+    >"$STATE.tmp" 2>/dev/null &&
     mv "$STATE.tmp" "$STATE" 2>/dev/null
 }
+
+# `.minted` as a literal true/false, never empty — state_write takes it as JSON.
+state_minted() {
+  [ "$(state_read '.minted')" = "true" ] && { echo true; return; }
+  echo false
+}
+
+# HH:MM out of a stamp_full value.
+clock_of() { local t=${1#*T}; printf '%s\n' "${t%%[+-]*}"; }
 
 # Does the clock say a new session-day has begun? Both conditions, never one.
 is_new_day() {
@@ -191,72 +247,103 @@ case "$event" in
 
   SessionStart)
     if is_new_day; then
-      state_write "$(today)" "$(stamp_full)" false || done_ok
+      now=$(stamp_full)
+      # A new day's first session opens both scopes at the same instant.
+      state_write "$(today)" "$now" false "$session" "$now" "" || done_ok
     else
-      # Continuing an open session-day: refresh mtime without disturbing the
-      # recorded start or the minted flag.
-      touch "$STATE" 2>/dev/null
+      # Continuing an open session-day. The day's own start, its minted flag and
+      # the idle clock are all left exactly as they are; the only new fact is
+      # that a different session is now running, and when it began. Writing
+      # nothing when the session is unchanged keeps a re-fired SessionStart from
+      # moving a start time backwards or forwards.
+      if [ "$(state_read '.session')" != "$session" ]; then
+        state_write "$(state_read '.day')" "$(state_read '.opened')" \
+          "$(state_minted)" "$session" "$(stamp_full)" ""
+      fi
     fi
     ;;
 
   PostToolUse)
     is_authoring "$tool" "$cmd" || done_ok
 
-    # Hot path: the day is already open and already recorded. grep rather than
-    # jq, so the common case is one cheap read and a touch.
-    grep -q '"minted": *true' "$STATE" 2>/dev/null &&
-      { touch "$STATE" 2>/dev/null; done_ok; }
+    # Hot path: this session's open line is already filed. grep rather than jq,
+    # so the common case is one cheap read and a touch. Keying on `logged`
+    # rather than `minted` is what lets a second session of an already-minted
+    # day still record its own open — under the old key it short-circuited here
+    # and the day ended with more closes in the ledger than opens.
+    grep -q "\"logged\": *\"$session\"" "$STATE" 2>/dev/null &&
+      { mark_activity; done_ok; }
 
     # A PostToolUse can arrive with no SessionStart behind it — a hook installed
     # mid-session, or a state file wiped. Open the day here rather than skip it.
     day=$(state_read '.day')
     opened=$(state_read '.opened')
+    session_opened=$(state_read '.session_opened')
     if [ -z "$day" ] || is_new_day; then
       day=$(today)
       opened=$(stamp_full)
+      session_opened=""
     fi
     [ -n "$opened" ] || opened=$(stamp_full)
+    # This session's own start, when no SessionStart recorded one.
+    if [ "$(state_read '.session')" != "$session" ] || [ -z "$session_opened" ]; then
+      session_opened=$(stamp_full)
+    fi
 
     path=$(daylog_path "$day")
     existed=yes
     [ -f "$path" ] || existed=no
     mint "$path" "$day" || { note "could not mint $path"; done_ok; }
 
-    opened_clock=${opened#*T}
-    opened_clock=${opened_clock%%[+-]*}
+    # The session's own start, not the day's. On the day's first session they
+    # are the same value; on every later one they are not, and this is the line
+    # the close below has to pair with.
+    open_clock=$(clock_of "$session_opened")
     if [ "$existed" = no ]; then
       minted_note="minted by this session's first authoring action"
     else
       minted_note="appended to a daylog that already existed"
     fi
     append_ledger "$path" \
-      "- \`$opened_clock\` — **session opens** · \`$short_session\` — recorded at \`$(stamp_clock)\`, $minted_note."
+      "- \`$open_clock\` — **session opens** · \`$short_session\` — recorded at \`$(stamp_clock)\`, $minted_note."
 
-    state_write "$day" "$opened" true
+    state_write "$day" "$opened" true "$session" "$session_opened" "$session"
+    mark_activity
     ;;
 
   SessionEnd)
     # `clear` and `resume` end a session id, not a working day — §3.1 files one
     # unbroken working session as one daylog, and /clear does not end one.
     case "$reason" in
-      clear|resume|compact) touch "$STATE" 2>/dev/null; done_ok ;;
+      clear|resume|compact) done_ok ;;
     esac
 
-    # A day nothing was written into stays unwritten. Closing a session that
-    # never authored anything must not mint a daylog on the way out.
-    [ "$(state_read '.minted')" = "true" ] || done_ok
+    # A day nothing was written into stays unwritten, and a session that filed
+    # no open files no close. `logged` is the record of an open line actually
+    # reaching the ledger, so keying on it is what makes opens and closes pair
+    # exactly. It implies `minted`, so the daylog is known to exist.
+    [ "$(state_read '.logged')" = "$session" ] || done_ok
 
     day=$(state_read '.day')
-    opened=$(state_read '.opened')
     [ -n "$day" ] || done_ok
     path=$(daylog_path "$day")
     [ -f "$path" ] || done_ok
 
-    opened_clock=${opened#*T}
-    opened_clock=${opened_clock%%[+-]*}
+    # The span is this session's. `.opened` is the *day's* open and reporting it
+    # here is what made every session after the day's first announce a start it
+    # never had, under a line that calls itself the true span.
+    session_opened=$(state_read '.session_opened')
+    [ -n "$session_opened" ] || session_opened=$(state_read '.opened')
+    [ -n "$session_opened" ] || done_ok
+
+    open_clock=$(clock_of "$session_opened")
     close_clock=$(stamp_clock)
-    span="\`$opened_clock → $close_clock\`"
-    [ "$day" = "$(today)" ] || span="\`$opened_clock → $close_clock\` (+1d)"
+    span="\`$open_clock → $close_clock\`"
+    # Keyed on the date this session began, not on the day the daylog is filed
+    # under. A session opened at 23:40 and closed at 00:20 ran past midnight; a
+    # session that opened and closed this morning did not, whichever date its
+    # session-day carries.
+    [ "${session_opened%%T*}" = "$(today)" ] || span="\`$open_clock → $close_clock\` (+1d)"
 
     line="- \`$close_clock\` — **session closes** · \`$short_session\` (\`${reason:-unknown}\`). True span $span."
 
@@ -278,7 +365,6 @@ case "$event" in
     fi
 
     append_ledger "$path" "$line"
-    touch "$STATE" 2>/dev/null
     ;;
 
 esac

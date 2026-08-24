@@ -38,6 +38,9 @@ fresh_vault() {
   n=$((n + 1))
   VAULT=$W/vault$n
   STATE=$W/state$n.json
+  # The hook derives this from DAYLOG_STATE; the suite has to know the same path
+  # to assert on the one thing it carries, which is its mtime.
+  ACTIVITY=$STATE.activity
   mkdir -p "$VAULT/hq" "$VAULT/_templates"
   # A faithful replica of ~/Dev/notes/_templates/daylog.md, INCLUDING its `##
   # Seal` stub. That section is not decoration here: an earlier fixture omitted
@@ -93,7 +96,32 @@ ok() { # ok <label> <condition-result>
 
 log_for() { printf '%s/hq/%s-daylog.md\n' "$VAULT" "${1:-$TODAY}"; }
 has() { grep -qF "$2" "$1" 2>/dev/null; }
-count() { grep -cF "$2" "$1" 2>/dev/null || echo 0; }
+count() { local c; c=$(grep -cF "$2" "$1" 2>/dev/null); printf '%s\n' "${c:-0}"; }
+mtime_of() { stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null || echo 0; }
+
+# A daylog that already exists, for the cases that begin mid-day rather than
+# minting their way in.
+seed_daylog() { # seed_daylog <day>
+  sed "s|^# Daylog — .*|# Daylog — $1|" "$VAULT/_templates/daylog.md" >"$(log_for "$1")"
+}
+
+# seed_state <day> <opened> <minted> <session> <session_opened> <logged>
+seed_state() {
+  jq -n --arg day "$1" --arg opened "$2" --argjson minted "$3" \
+    --arg session "$4" --arg so "$5" --arg logged "$6" \
+    '{day:$day, opened:$opened, minted:$minted,
+      session:$session, session_opened:$so, logged:$logged}' >"$STATE"
+}
+
+OPENS='**session opens**'
+CLOSES='**session closes**'
+
+# Assert on the close line itself, never on the whole file. The daylog template
+# ships the words "stating the `(+1d)` when the session ran past midnight", so a
+# file-wide grep for `(+1d)` matches the template's own prose and scores every
+# span case green whatever the hook wrote.
+close_line() { grep -F "$CLOSES" "$1" 2>/dev/null | tail -1; }
+line_has() { printf '%s' "$1" | grep -qF "$2"; }
 
 START='{"hook_event_name":"SessionStart","session_id":"abcdef1234","source":"startup","cwd":"/tmp"}'
 w_write='{"hook_event_name":"PostToolUse","session_id":"abcdef1234","tool_name":"Write","tool_input":{"file_path":"/tmp/x"}}'
@@ -204,6 +232,84 @@ touch -t "$LONG_AGO" "$STATE"
 fire "$START"
 ok "a new morning opens a new session-day"         "$([ "$(jq -r .day "$STATE")" = "$TODAY" ] && echo 0 || echo 1)"
 ok "and clears the minted flag"                    "$([ "$(jq -r .minted "$STATE")" = false ] && echo 0 || echo 1)"
+
+# ------------------------------------------------------- the idle clock ----
+# The clock answers "how long since work stopped". Every event that is not work
+# must leave it alone — a session end refreshing it is the inversion that froze
+# the session-day, so this asserts on the mtime directly rather than on any
+# downstream symptom.
+echo "the idle clock — measured from work, never from the hook's own footprints"
+
+fresh_vault
+fire "$START"; fire "$w_write"
+ok "authoring creates the idle clock"              "$([ -f "$ACTIVITY" ] && echo 0 || echo 1)"
+
+touch -t "$LONG_AGO" "$ACTIVITY"
+frozen=$(mtime_of "$ACTIVITY")
+fire "$START"
+ok "a session start does not refresh it"           "$([ "$(mtime_of "$ACTIVITY")" = "$frozen" ] && echo 0 || echo 1)"
+fire "$end_clear"
+ok "a /clear does not refresh it"                  "$([ "$(mtime_of "$ACTIVITY")" = "$frozen" ] && echo 0 || echo 1)"
+fire "$end_logout"
+ok "a real close does not refresh it"              "$([ "$(mtime_of "$ACTIVITY")" = "$frozen" ] && echo 0 || echo 1)"
+fire "$w_read"; fire "$w_ls"; fire "$w_gitstatus"
+ok "a non-authoring tool call does not refresh it" "$([ "$(mtime_of "$ACTIVITY")" = "$frozen" ] && echo 0 || echo 1)"
+fire "$w_edit"
+ok "authoring does refresh it"                     "$([ "$(mtime_of "$ACTIVITY")" != "$frozen" ] && echo 0 || echo 1)"
+
+# The reported shape end to end: yesterday's session closes, and a session
+# starting this morning must still open a new session-day. The close is the
+# event that used to prevent it.
+fresh_vault
+seed_daylog "$YESTERDAY"
+seed_state "$YESTERDAY" "${YESTERDAY}T18:00-06:00" true "abcdef1234" "${YESTERDAY}T18:00-06:00" "abcdef1234"
+touch -t "$LONG_AGO" "$ACTIVITY"
+fire "$end_logout"
+ok "yesterday's close lands in yesterday's daylog" "$(has "$(log_for "$YESTERDAY")" "$CLOSES" && echo 0 || echo 1)"
+fire "$START"
+ok "and the next start still rolls the day over"   "$([ "$(jq -r .day "$STATE")" = "$TODAY" ] && echo 0 || echo 1)"
+
+# -------------------------------------------------------------- the span ----
+# `opened` is the day's; the close line names one session and calls its span
+# true. Every session after the day's first therefore reported a start it never
+# had, and the ledger carried no open line that could contradict it.
+echo "the span — a session's close reports the session's own start"
+
+fresh_vault
+seed_daylog "$TODAY"
+seed_state "$TODAY" "${TODAY}T07:27-06:00" true "" "" ""
+fire "$START"; fire "$w_write"
+LOG=$(log_for "$TODAY")
+ok "an already-minted day still records an open"   "$([ "$(count "$LOG" "$OPENS")" -eq 1 ] && echo 0 || echo 1)"
+ok "the open is this session's, not the day's"     "$(has "$LOG" '`07:27` — **session opens**' && echo 1 || echo 0)"
+fire "$end_logout"
+ok "the close pairs with that open"                "$([ "$(count "$LOG" "$CLOSES")" -eq 1 ] && echo 0 || echo 1)"
+ok "and its span does not claim the day's start"   "$(line_has "$(close_line "$LOG")" '`07:27 →' && echo 1 || echo 0)"
+ok "opens and closes pair one to one"              "$([ "$(count "$LOG" "$OPENS")" -eq "$(count "$LOG" "$CLOSES")" ] && echo 0 || echo 1)"
+
+# `(+1d)` belongs to a session that really crossed midnight, which is a fact
+# about when the session opened — not about which date its session-day is
+# filed under.
+fresh_vault
+seed_daylog "$YESTERDAY"
+seed_state "$YESTERDAY" "${YESTERDAY}T18:00-06:00" true "abcdef1234" "${YESTERDAY}T23:40-06:00" "abcdef1234"
+fire "$end_logout"
+ok "a session opened yesterday closes with (+1d)"  "$(line_has "$(close_line "$(log_for "$YESTERDAY")")" '(+1d)' && echo 0 || echo 1)"
+
+fresh_vault
+seed_daylog "$YESTERDAY"
+seed_state "$YESTERDAY" "${YESTERDAY}T18:00-06:00" true "abcdef1234" "${TODAY}T09:12-06:00" "abcdef1234"
+fire "$end_logout"
+ok "one that opened this morning does not"         "$(line_has "$(close_line "$(log_for "$YESTERDAY")")" '(+1d)' && echo 1 || echo 0)"
+ok "and spans from 09:12, not from 18:00"          "$(line_has "$(close_line "$(log_for "$YESTERDAY")")" '`09:12 →' && echo 0 || echo 1)"
+
+# A close with no open of its own is the asymmetry that let four closes and zero
+# opens share a ledger.
+fresh_vault
+seed_daylog "$TODAY"
+seed_state "$TODAY" "${TODAY}T07:27-06:00" true "99887766aa" "${TODAY}T07:27-06:00" "99887766aa"
+fire "$end_logout"
+ok "a session that filed no open files no close"   "$([ "$(count "$(log_for "$TODAY")" "$CLOSES")" -eq 0 ] && echo 0 || echo 1)"
 
 # ---------------------------------------------------------- failing open ----
 echo "failing open — a record is not a floor"
