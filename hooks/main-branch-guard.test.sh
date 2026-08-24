@@ -86,6 +86,54 @@ check REFUSED "$P with no refspec"          "$R" "git $P"
 check ALLOWED "read-only git command"       "$R" "git status"
 check ALLOWED "no git at all"               "$R" "ls -la"
 
+# ------------------------------------------------------- the false refusals ----
+# Both fail closed, so the floor's safety property survived them. Both also
+# train people to route around the guard, which is the one thing this floor
+# cannot afford.
+echo "false refusals (same repo, on '$M')"
+
+# The guard refused the idiom its own refusal message recommends. `current` is
+# resolved once from live HEAD before the segment loop, so a command that moves
+# HEAD partway through was invisible.
+check ALLOWED "branch, then $C, one command" "$R" "git switch -c fix/x && git $C -m y"
+check ALLOWED "checkout -b, then $C"         "$R" "git checkout -b fix/x && git $C -m y"
+check ALLOWED "switch -C, then $C"           "$R" "git switch -C fix/x && git $C -m y"
+check ALLOWED "branch, $C, $C again"         "$R" "git switch -c fix/x && git $C -m y && git $C -m z"
+
+# Only a verb that creates AND moves HEAD counts. git will not create a branch
+# that already exists, so a branch born mid-command cannot be '$M' — which is
+# exactly the guarantee a bare switch to an existing branch does not give.
+check REFUSED "switch to an existing branch" "$R" "git switch exploration/x && git $C -m y"
+check REFUSED "$C first, branch after"       "$R" "git $C -m y && git switch -c fix/x"
+check REFUSED "branch, $C, then $P to '$M'"  "$R" "git switch -c fix/x && git $C -m y && git $P origin $M"
+
+# The guard read quoted prose as commands. This is the case that blocked filing
+# the issue: the command is `gh`, which touches no repository at all, and the
+# body merely quoted a shell line. Splitting on a `&&` inside quotes produced a
+# fragment that was a git commit as far as the guard could see.
+#
+# Note what makes this harder than it looks: the surviving fragment BEGINS with
+# git, so requiring that is not enough on its own. Quote state is the only thing
+# that tells an argument from a command.
+check ALLOWED "gh body quoting a git line"   "$R" 'gh issue create --body "run: git switch -c x && git commit -m y"'
+check ALLOWED "echo of a git line"           "$R" "echo 'git $C -m y && git $P origin $M'"
+check ALLOWED "$C message naming '$M'"       "$R" "git switch -c fix/x && git $C -m 'stop pushing to $M'"
+check ALLOWED "gh body, single quotes"       "$R" "gh pr create --body 'git $P origin $M'"
+
+# A heredoc body is data too, and it is how a long PR body actually gets passed.
+check ALLOWED "heredoc body with a git line" "$R" "gh pr create --body-file - <<'MSG'
+Do this: git switch -c x && git $C -m y
+MSG"
+check ALLOWED "quoted heredoc word, dashed"  "$R" "gh pr create --body-file - <<-'MSG'
+git $P origin $M
+MSG"
+
+# And the narrowing must not open a door. A real git command still reads as one
+# after a `VAR=value` prefix, and prose in an argument does not stop a genuine
+# git invocation elsewhere in the same string from being caught.
+check REFUSED "env prefix before git"        "$R" "GIT_AUTHOR_NAME=x git $C -m y"
+check REFUSED "gh body, then a real $P"      "$R" "gh issue create --body 'about $M' && git $P origin $M"
+
 # ------------------------------------------------------------- repo state ----
 echo "repo state"
 new() { git init -q -b "$2" "$W/$1"; echo "$W/$1"; }
