@@ -46,7 +46,7 @@ A good convergence session is never longer than 50 questions.
 
 **Write back to the map first** (when this grill came from one): edit the source
 map in place. Annotate every node this session closed as `[resolved →
-[[this-grill]]]` or `[dropped — <reason>]`, strike it from the hotspot list, and
+[[this-grill]]]` or `[dropped → <reason>]`, strike it from the hotspot list, and
 add any node the convergence *opened*. The link runs both ways or the map goes
 stale. A map still asking a question you answered lies about what is open.
 
