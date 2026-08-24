@@ -253,7 +253,7 @@ while IFS= read -r seg; do
   if [ "$verb" = "commit" ] && [ "$current" = "$default" ] && [ "$branched" = no ]; then
     deny "Refusing: this would commit straight to '$default' in $repo.
 
-Branch first — 'git switch -c <branch>' — then commit, push, and open a PR.
+Branch first: 'git switch -c <branch>', then commit, push, and open a PR.
 Direct commits to a default branch are the failure this floor exists to catch;
 the remote would only refuse it later, at push time.
 
@@ -296,7 +296,7 @@ this."
       if [ "$dest" = "$default" ]; then
         deny "Refusing: this would push directly to '$default' in $repo.
 
-Push your branch instead and open a PR — 'git push -u origin <branch>' then
+Push your branch instead and open a PR: 'git push -u origin <branch>' then
 'gh pr create'. A PR is the floor; on the protected repos the remote refuses
 this too, and this hook catches it on the ones where it would not.
 
