@@ -1,0 +1,779 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+MODE=dry-run
+HARNESS=""
+PROJECT=""
+SKILLS=()
+CHANGES=0
+UNCHANGED=0
+WARNINGS=0
+
+usage() {
+  cat <<'USAGE'
+Usage: harness/wire [--dry-run | --apply] [--harness NAME]
+                    [--project PATH] [--skill NAME ...]
+
+Reads harness/*/wiring.json. Dry-run is the default. Pass --apply to create or
+repair managed links, imports, settings, and native agent files. Supplying
+--project links every project skill unless one or more --skill selectors narrow
+the set, and renders matching project-scoped commands.
+USAGE
+}
+
+die() {
+  printf 'wire: %s\n' "$1" >&2
+  exit 1
+}
+
+expand_home() {
+  case "$1" in
+    "~") printf '%s\n' "$HOME" ;;
+    \~/*) printf '%s/%s\n' "$HOME" "${1#\~/}" ;;
+    *) printf '%s\n' "$1" ;;
+  esac
+}
+
+selected_skill() {
+  local name=$1 requested
+  [ ${#SKILLS[@]} -eq 0 ] && return 0
+  for requested in "${SKILLS[@]}"; do
+    [ "$requested" = "$name" ] && return 0
+  done
+  return 1
+}
+
+ensure_parent() {
+  local path=$1 parent
+  parent=$(dirname "$path")
+  [ -d "$parent" ] || mkdir -p "$parent"
+}
+
+wire_link() {
+  local source=$1 destination=$2 current
+
+  if [ -L "$destination" ]; then
+    current=$(readlink "$destination")
+    if [ "$current" = "$source" ]; then
+      printf '  unchanged  %s -> %s\n' "$destination" "$source"
+      UNCHANGED=$((UNCHANGED + 1))
+      return
+    fi
+    case "$current" in
+      "$ROOT"/*) ;;
+      *)
+        printf '  unmanaged  %s -> %s (refusing to replace)\n' "$destination" "$current"
+        WARNINGS=$((WARNINGS + 1))
+        return
+        ;;
+    esac
+    printf '  relink     %s -> %s (was %s)\n' "$destination" "$source" "$current"
+    CHANGES=$((CHANGES + 1))
+    [ "$MODE" = apply ] && ln -sfn "$source" "$destination"
+    return
+  fi
+
+  if [ -e "$destination" ]; then
+    printf '  unmanaged  %s (refusing to replace)\n' "$destination"
+    WARNINGS=$((WARNINGS + 1))
+    return
+  fi
+
+  printf '  link       %s -> %s\n' "$destination" "$source"
+  CHANGES=$((CHANGES + 1))
+  if [ "$MODE" = apply ]; then
+    ensure_parent "$destination"
+    ln -s "$source" "$destination"
+  fi
+}
+
+wire_import() {
+  local source=$1 destination=$2 prefix=$3 display_source line
+  display_source=$source
+  case "$source" in
+    # Preserve the portable home-relative import syntax used by Claude Code.
+    "$HOME"/*) printf -v display_source '\176/%s' "${source#"$HOME"/}" ;;
+  esac
+  line="${prefix}${display_source}"
+
+  if [ -f "$destination" ] && grep -Fqx "$line" "$destination"; then
+    printf '  unchanged  %s contains %s\n' "$destination" "$line"
+    UNCHANGED=$((UNCHANGED + 1))
+    return
+  fi
+
+  if [ -e "$destination" ] && [ ! -f "$destination" ]; then
+    printf '  unmanaged  %s (import target is not a file)\n' "$destination"
+    WARNINGS=$((WARNINGS + 1))
+    return
+  fi
+
+  printf '  import     %s into %s\n' "$line" "$destination"
+  CHANGES=$((CHANGES + 1))
+  if [ "$MODE" = apply ]; then
+    ensure_parent "$destination"
+    [ ! -s "$destination" ] || [ "$(tail -c 1 "$destination" 2>/dev/null || true)" = "" ] || printf '\n' >>"$destination"
+    printf '%s\n' "$line" >>"$destination"
+  fi
+}
+
+merge_claude_settings() {
+  local source=$1 destination=$2 existing merged existing_sorted merged_sorted temp
+
+  if [ -e "$destination" ] && [ ! -f "$destination" ]; then
+    printf '  unmanaged  %s (settings target is not a file)\n' "$destination"
+    WARNINGS=$((WARNINGS + 1))
+    return
+  fi
+
+  jq -e . "$source" >/dev/null || die "invalid JSON merge source: $source"
+  if [ -f "$destination" ]; then
+    jq -e . "$destination" >/dev/null 2>&1 || {
+      printf '  unmanaged  %s (refusing to replace invalid JSON)\n' "$destination"
+      WARNINGS=$((WARNINGS + 1))
+      return
+    }
+    existing=$(jq -c . "$destination")
+  else
+    existing='{}'
+  fi
+
+  merged=$(jq -cn --argjson existing "$existing" --slurpfile baseline "$source" '
+    def merge($base; $local):
+      if ($base | type) == "object" and ($local | type) == "object" then
+        reduce ((($base | keys_unsorted) + ($local | keys_unsorted)) | unique[]) as $key
+          ({};
+            .[$key] =
+              if ($base | has($key)) and ($local | has($key)) then
+                merge($base[$key]; $local[$key])
+              elif $base | has($key) then
+                $base[$key]
+              else
+                $local[$key]
+              end)
+      elif ($base | type) == "array" and ($local | type) == "array" then
+        reduce ($base + $local)[] as $item
+          ([]; if index($item) == null then . + [$item] else . end)
+      else
+        $base
+      end;
+
+    def managed_hook:
+      ((.command // "") |
+        test("(^|/)(main-branch-guard|daylog-trigger)\\.sh([\\\" ]|$)"));
+
+    def strip_managed_hooks:
+      if type != "object" then {}
+      else
+        with_entries(
+          .value |= [
+            .[] |
+            .hooks = [.hooks[]? | select(managed_hook | not)] |
+            select((.hooks | length) > 0)
+          ]
+        )
+      end;
+
+    ($existing.hooks // {} | strip_managed_hooks) as $local_hooks |
+    ($existing | .hooks = $local_hooks) as $local |
+    merge($baseline[0]; $local)
+  ') || die "could not merge Claude settings"
+
+  existing_sorted=$(printf '%s\n' "$existing" | jq -S .)
+  merged_sorted=$(printf '%s\n' "$merged" | jq -S .)
+  if [ "$existing_sorted" = "$merged_sorted" ]; then
+    printf '  unchanged  %s matches %s\n' "$destination" "$source"
+    UNCHANGED=$((UNCHANGED + 1))
+    return
+  fi
+
+  printf '  merge      %s <- %s\n' "$destination" "$source"
+  CHANGES=$((CHANGES + 1))
+  if [ "$MODE" = apply ]; then
+    ensure_parent "$destination"
+    temp="${destination}.skills.$$"
+    if [ -f "$destination" ]; then
+      cp -p "$destination" "$temp"
+    else
+      (umask 077 && : >"$temp")
+    fi
+    printf '%s\n' "$merged" | jq . >"$temp"
+    mv "$temp" "$destination"
+  fi
+}
+
+wire_json_merge() {
+  local source=$1 destination=$2 strategy=$3
+  case "$strategy" in
+    claude-settings) merge_claude_settings "$source" "$destination" ;;
+    *) die "unknown JSON merge strategy: $strategy" ;;
+  esac
+}
+
+render_agent() {
+  local format=$1 target=$2 name=$3 description=$4 native=$5 source=$6 destination=$7
+  local models=$8 target_ref catalogue tier model_data model level frontmatter
+  local marker temp current
+
+  target_ref=$(jq -er --arg name "$name" --arg target "$target" \
+    '.agents[$name].default[$target]' "$models") ||
+    die "model target missing for $target agent $name"
+  catalogue=${target_ref%%:*}
+  tier=${target_ref#*:}
+  [ "$catalogue" != "$target_ref" ] || die "invalid model target for $target agent $name: $target_ref"
+  model_data=$(jq -ec --arg catalogue "$catalogue" --arg tier "$tier" \
+    '.catalogues[$catalogue].targets[$tier]' "$models") ||
+    die "model target does not resolve for $target agent $name: $target_ref"
+  model=$(jq -r '.model' <<<"$model_data")
+
+  case "$format" in
+    claude-code)
+      level=$(jq -r '.effort' <<<"$model_data")
+      frontmatter=$(jq -cn --argjson native "$native" --arg name "$name" \
+        --arg description "$description" --arg model "$model" --arg effort "$level" \
+        '$native + {name:$name, description:$description, model:$model, effort:$effort}')
+      ;;
+    opencode)
+      level=$(jq -r '.variant' <<<"$model_data")
+      frontmatter=$(jq -cn --argjson native "$native" --arg name "$name" \
+        --arg description "$description" --arg model "$model" --arg variant "$level" \
+        '$native + {name:$name, description:$description, model:$model, variant:$variant}')
+      ;;
+    *) die "unknown agent render format: $format" ;;
+  esac
+
+  marker="<!-- managed by harness/wire; source: agents/$name.md -->"
+  temp=$(mktemp "${TMPDIR:-/tmp}/skills-agent.XXXXXX")
+  {
+    printf '%s\n' '---' "$frontmatter" '---' '' "$marker" ''
+    cat "$source"
+    printf '\n## Harness tier\n\n'
+    if [ "$format" = claude-code ]; then
+      printf 'Configured default: %s at effort %s. ' "\`$model\`" "\`$level\`"
+    else
+      printf 'Configured default: %s at variant %s. ' "\`$model\`" "\`$level\`"
+    fi
+
+    target_ref=$(jq -er --arg name "$name" --arg target "$target" \
+      '.agents[$name].escalation[$target]' "$models") ||
+      die "escalation target missing for $target agent $name"
+    catalogue=${target_ref%%:*}
+    tier=${target_ref#*:}
+    model_data=$(jq -ec --arg catalogue "$catalogue" --arg tier "$tier" \
+      '.catalogues[$catalogue].targets[$tier]' "$models") ||
+      die "escalation target does not resolve for $target agent $name: $target_ref"
+    if [ "$format" = claude-code ]; then
+      printf 'Configured escalation: %s at effort %s.\n\n' \
+        "\`$(jq -r '.model' <<<"$model_data")\`" "\`$(jq -r '.effort' <<<"$model_data")\`"
+      printf '%s' "Close every run with \`— ran: <model-id> · effort: <tier>\`. "
+    else
+      printf 'Configured escalation: %s at variant %s.\n\n' \
+        "\`$(jq -r '.model' <<<"$model_data")\`" "\`$(jq -r '.variant' <<<"$model_data")\`"
+      printf '%s' "Close every run with \`— ran: <model-id> · variant: <tier>\`. "
+    fi
+    printf 'Use the runtime value when the harness exposes it; otherwise label the value as configured.\n'
+  } >"$temp"
+  chmod 644 "$temp"
+
+  if [ -f "$destination" ] && cmp -s "$temp" "$destination"; then
+    printf '  unchanged  %s rendered from %s\n' "$destination" "$source"
+    UNCHANGED=$((UNCHANGED + 1))
+    rm -f "$temp"
+    return
+  fi
+
+  if [ -L "$destination" ]; then
+    current=$(readlink "$destination")
+    case "$current" in
+      "$ROOT"/agents/*.md) ;;
+      *)
+        printf '  unmanaged  %s -> %s (refusing to replace)\n' "$destination" "$current"
+        WARNINGS=$((WARNINGS + 1))
+        rm -f "$temp"
+        return
+        ;;
+    esac
+  elif [ -e "$destination" ] && ! grep -Fq '<!-- managed by harness/wire; source: agents/' "$destination"; then
+    printf '  unmanaged  %s (refusing to replace)\n' "$destination"
+    WARNINGS=$((WARNINGS + 1))
+    rm -f "$temp"
+    return
+  fi
+
+  printf '  render     %s <- %s [%s]\n' "$destination" "$source" "$format"
+  CHANGES=$((CHANGES + 1))
+  if [ "$MODE" = apply ]; then
+    ensure_parent "$destination"
+    mv -f "$temp" "$destination"
+  else
+    rm -f "$temp"
+  fi
+}
+
+render_agents() {
+  local source_dir=$1 catalog=$2 metadata=$3 destination=$4 format=$5 target=$6
+  local name description native source
+  local models="$ROOT/harness/models.json"
+
+  jq -e --slurpfile catalog "$catalog" '
+    .version == 1 and
+    (.harness | type == "string") and
+    ((.agents | keys) == ($catalog[0].agents | keys))
+  ' "$metadata" >/dev/null || die "agent metadata does not match catalog: $metadata"
+
+  while IFS= read -r name; do
+    description=$(jq -er --arg name "$name" '.agents[$name].description' "$catalog") ||
+      die "agent description missing: $name"
+    native=$(jq -ec --arg name "$name" '.agents[$name]' "$metadata") ||
+      die "native agent metadata missing: $name"
+    source="$ROOT/$source_dir/$name.md"
+    [ -f "$source" ] || die "agent prompt missing: $source"
+    render_agent "$format" "$target" "$name" "$description" "$native" "$source" \
+      "$destination/$name.md" "$models"
+  done < <(jq -r '.agents | keys[]' "$catalog")
+}
+
+canonical_description() {
+  local source=$1
+  awk '
+    NR == 1 && $0 == "---" { frontmatter = 1; next }
+    frontmatter && $0 == "---" { exit }
+    frontmatter && /^description:[[:space:]]*>-?[[:space:]]*$/ {
+      description = 1
+      next
+    }
+    frontmatter && description && /^  / {
+      line = $0
+      sub(/^  /, "", line)
+      if (result != "") result = result " "
+      result = result line
+      next
+    }
+    frontmatter && description { exit }
+    frontmatter && /^description:[[:space:]]*/ {
+      line = $0
+      sub(/^description:[[:space:]]*/, "", line)
+      print line
+      found = 1
+      exit
+    }
+    END {
+      if (result != "") print result
+    }
+  ' "$source"
+}
+
+render_command() {
+  local format=$1 target=$2 name=$3 source=$4 agent=$5 model_ref=$6 destination=$7
+  local skill=$8 kind=$9 configured_description=${10}
+  local models="$ROOT/harness/models.json" target_ref catalogue tier model_data model level
+  local description frontmatter marker temp current
+
+  case "$format:$target" in
+    claude-code:claude-code|opencode:opencode) ;;
+    *) die "unknown command render format and target: $format:$target" ;;
+  esac
+  target_ref=$(jq -er --arg reference "$model_ref" \
+    'getpath($reference | split("."))' "$models") ||
+    die "model reference does not resolve for command $name: $model_ref"
+  catalogue=${target_ref%%:*}
+  tier=${target_ref#*:}
+  [ "$catalogue" != "$target_ref" ] ||
+    die "invalid model target for command $name: $target_ref"
+  model_data=$(jq -ec --arg catalogue "$catalogue" --arg tier "$tier" \
+    '.catalogues[$catalogue].targets[$tier]' "$models") ||
+    die "model target does not resolve for command $name: $target_ref"
+  model=$(jq -er '.model' <<<"$model_data")
+  description=$configured_description
+  [ -n "$description" ] || description=$(canonical_description "$source")
+  [ -n "$description" ] || die "canonical command description missing: $source"
+
+  case "$format" in
+    claude-code)
+      level=$(jq -er '.effort' <<<"$model_data")
+      frontmatter=$(jq -cn --arg description "$description" --arg model "$model" \
+        --arg effort "$level" '{description:$description, model:$model, effort:$effort}')
+      ;;
+    opencode)
+      level=$(jq -er '.variant' <<<"$model_data")
+      if [ -n "$agent" ]; then
+        frontmatter=$(jq -cn --arg description "$description" --arg agent "$agent" \
+          --arg model "$model" --arg variant "$level" \
+          '{description:$description, agent:$agent, subtask:false, model:$model, variant:$variant}')
+      else
+        frontmatter=$(jq -cn --arg description "$description" --arg model "$model" \
+          --arg variant "$level" \
+          '{description:$description, model:$model, variant:$variant}')
+      fi
+      ;;
+  esac
+
+  marker="<!-- managed by harness/wire command; source: $model_ref from ${source#"$ROOT"/} -->"
+  temp=$(mktemp "${TMPDIR:-/tmp}/skills-command.XXXXXX")
+  {
+    printf '%s\n' '---' "$frontmatter" '---' '' "$marker" ''
+    # Both command runtimes expand this placeholder.
+    # shellcheck disable=SC2016
+    printf 'Command arguments: $ARGUMENTS\n\n'
+    if [ "$agent" = radar ]; then
+      printf '%s\n\n' \
+        'Radar is already active for this command turn. Execute canonical instructions that say to spawn @radar directly instead of spawning Radar again. This agent and model binding ends after the command turn.'
+    fi
+    if [ "$kind" = retry ]; then
+      printf "This is an explicit retry of \`%s\`, not an in-flight tier change. Apply the canonical instructions below at this command's configured retry tier without invoking the native \`%s\` skill, which carries its default pin. The command arguments contain the first pass's retry reason; report that reason with the findings. If this pass is still inconclusive, report the remaining uncertainty without requesting another retry.\n\n" \
+        "$skill" "$skill"
+    fi
+    printf '<!-- canonical body: %s -->\n' "${source#"$ROOT"/}"
+    awk 'NR == 1 && $0 == "---" { frontmatter = 1; next }
+         frontmatter && $0 == "---" { frontmatter = 0; next }
+         !frontmatter { print }' "$source"
+  } >"$temp"
+  chmod 644 "$temp"
+
+  if [ -f "$destination" ] && cmp -s "$temp" "$destination"; then
+    printf '  unchanged  %s rendered from %s\n' "$destination" "$source"
+    UNCHANGED=$((UNCHANGED + 1))
+    rm -f "$temp"
+    return
+  fi
+
+  if [ -L "$destination" ]; then
+    current=$(readlink "$destination")
+    printf '  unmanaged  %s -> %s (refusing to replace)\n' "$destination" "$current"
+    WARNINGS=$((WARNINGS + 1))
+    rm -f "$temp"
+    return
+  fi
+  if [ -e "$destination" ] &&
+    ! grep -Fq '<!-- managed by harness/wire command; source: ' "$destination"; then
+    printf '  unmanaged  %s (refusing to replace)\n' "$destination"
+    WARNINGS=$((WARNINGS + 1))
+    rm -f "$temp"
+    return
+  fi
+
+  printf '  render     %s <- %s [%s]\n' "$destination" "$source" "$format"
+  CHANGES=$((CHANGES + 1))
+  if [ "$MODE" = apply ]; then
+    ensure_parent "$destination"
+    mv -f "$temp" "$destination"
+  else
+    rm -f "$temp"
+  fi
+}
+
+render_commands() {
+  local catalog=$1 global_destination=$2 project_destination=$3 format=$4 target=$5
+  local name source skill kind description agent model_ref destination
+
+  while IFS= read -r name; do
+    source=$(jq -er --arg name "$name" '.commands[$name].source' "$catalog") ||
+      die "command source missing: $name"
+    skill=$(jq -r --arg name "$name" '.commands[$name].skill // $name' "$catalog")
+    kind=$(jq -r --arg name "$name" '.commands[$name].kind // "canonical"' "$catalog")
+    description=$(jq -r --arg name "$name" '.commands[$name].description // ""' "$catalog")
+    agent=$(jq -r --arg name "$name" '.commands[$name].agent // ""' "$catalog")
+    model_ref=$(jq -er --arg name "$name" '.commands[$name].modelRef' "$catalog") ||
+      die "command model reference missing: $name"
+    case "$source" in
+      global/*)
+        destination="$(expand_home "$global_destination")/$name.md"
+        ;;
+      engineering/*)
+        [ -n "$PROJECT" ] || continue
+        selected_skill "$skill" || continue
+        destination="$PROJECT/$project_destination/$name.md"
+        ;;
+      *) die "command source has unknown scope: $source" ;;
+    esac
+    render_command "$format" "$target" "$name" "$ROOT/$source" "$agent" \
+      "$model_ref" "$destination" "$skill" "$kind" "$description"
+  done < <(jq -r '.commands | keys[]' "$catalog")
+}
+
+scan_unmanaged() {
+  local destination=$1 item target
+  [ -d "$destination" ] || return 0
+
+  shopt -s nullglob
+  for item in "$destination"/*; do
+    if [ ! -L "$item" ]; then
+      printf '  unmanaged  %s -> review/remove\n' "$item"
+      WARNINGS=$((WARNINGS + 1))
+      continue
+    fi
+    target=$(readlink "$item")
+    case "$target" in
+      "$ROOT"/*) ;;
+      *)
+        printf '  unmanaged  %s -> %s -> review/remove\n' "$item" "$target"
+        WARNINGS=$((WARNINGS + 1))
+        ;;
+    esac
+  done
+  shopt -u nullglob
+}
+
+validate_manifest() {
+  local manifest=$1
+  jq -e '
+    .version == 1 and
+    (.harness | type == "string") and
+    (.links | type == "array") and
+    (.projectLinks | type == "array") and
+    (.imports | type == "array") and
+    (.jsonMerges | type == "array") and
+    (.agentRenders | type == "array") and
+    (.commandRenders | type == "array") and
+    (.external | type == "array") and
+    (.deferred | type == "array")
+  ' "$manifest" >/dev/null || die "invalid manifest: $manifest"
+}
+
+preflight_manifest() {
+  local manifest=$1 source_dir source strategy catalog metadata format target name skill kind model_ref
+
+  while IFS= read -r source_dir; do
+    [ -d "$ROOT/$source_dir" ] || die "source directory missing: $ROOT/$source_dir"
+  done < <(jq -r '.links[].sourceDir, .projectLinks[].sourceDir' "$manifest")
+
+  while IFS= read -r source; do
+    [ -f "$ROOT/$source" ] || die "import source missing: $ROOT/$source"
+  done < <(jq -r '.imports[].source' "$manifest")
+
+  while IFS=$'\t' read -r source strategy; do
+    [ -f "$ROOT/$source" ] || die "JSON merge source missing: $ROOT/$source"
+    [ "$strategy" = claude-settings ] || die "unknown JSON merge strategy: $strategy"
+    jq -e . "$ROOT/$source" >/dev/null || die "invalid JSON merge source: $ROOT/$source"
+  done < <(jq -r '.jsonMerges[] | [.source, .strategy] | @tsv' "$manifest")
+
+  while IFS=$'\t' read -r source_dir catalog metadata format target; do
+    [ -d "$ROOT/$source_dir" ] || die "agent source directory missing: $ROOT/$source_dir"
+    [ -f "$ROOT/$catalog" ] || die "agent catalog missing: $ROOT/$catalog"
+    [ -f "$ROOT/$metadata" ] || die "agent metadata missing: $ROOT/$metadata"
+    jq -e '.version == 1 and (.agents | type == "object")' "$ROOT/$catalog" >/dev/null ||
+      die "invalid agent catalog: $ROOT/$catalog"
+    jq -e '.version == 1 and (.agents | type == "object")' "$ROOT/$metadata" >/dev/null ||
+      die "invalid agent metadata: $ROOT/$metadata"
+    case "$format:$target" in
+      claude-code:claude-code|opencode:opencode) ;;
+      *) die "invalid agent render format and target: $format:$target" ;;
+    esac
+  done < <(jq -r '.agentRenders[] | [.sourceDir, .catalog, .metadata, .format, .target] | @tsv' "$manifest")
+
+  while IFS=$'\t' read -r catalog format target; do
+    [ -f "$ROOT/$catalog" ] || die "command catalog missing: $ROOT/$catalog"
+    jq -e '.version == 1 and (.commands | type == "object")' "$ROOT/$catalog" >/dev/null ||
+      die "invalid command catalog: $ROOT/$catalog"
+    case "$format:$target" in
+      claude-code:claude-code|opencode:opencode) ;;
+      *) die "invalid command render format and target: $format:$target" ;;
+    esac
+    while IFS= read -r name; do
+      source=$(jq -er --arg name "$name" '.commands[$name].source' "$ROOT/$catalog") ||
+        die "command source missing: $name"
+      [ -f "$ROOT/$source" ] || die "canonical command source missing: $ROOT/$source"
+      skill=$(jq -r --arg name "$name" '.commands[$name].skill // $name' "$ROOT/$catalog")
+      [ "$(basename "$(dirname "$source")")" = "$skill" ] ||
+        die "command name does not match canonical source: $name -> $source"
+      kind=$(jq -r --arg name "$name" '.commands[$name].kind // "canonical"' "$ROOT/$catalog")
+      case "$kind" in
+        canonical|retry) ;;
+        *) die "unknown command kind: $name -> $kind" ;;
+      esac
+      model_ref=$(jq -er --arg name "$name" '.commands[$name].modelRef' "$ROOT/$catalog") ||
+        die "command model reference missing: $name"
+      jq -e --arg reference "$model_ref" 'getpath($reference | split(".")) | type == "string"' \
+        "$ROOT/harness/models.json" >/dev/null ||
+        die "command model reference does not resolve: $name -> $model_ref"
+    done < <(jq -r '.commands | keys[]' "$ROOT/$catalog")
+  done < <(jq -r '.commandRenders[] | [.catalog, .format, .target] | @tsv' "$manifest")
+}
+
+wire_groups() {
+  local manifest=$1 key=$2 project_scope=$3 group source_dir match exclude destination
+  local source name found
+
+  while IFS= read -r group; do
+    source_dir=$(jq -r '.sourceDir' <<<"$group")
+    match=$(jq -r '.match' <<<"$group")
+    exclude=$(jq -r '.exclude // ""' <<<"$group")
+    destination=$(jq -r '.destination' <<<"$group")
+
+    if [ "$project_scope" = yes ]; then
+      if [ -z "$PROJECT" ]; then
+        printf '  deferred   project links (pass --project PATH)\n'
+        continue
+      fi
+      destination="$PROJECT/$destination"
+    else
+      destination=$(expand_home "$destination")
+    fi
+
+    [ -d "$ROOT/$source_dir" ] || die "source directory missing: $ROOT/$source_dir"
+    found=0
+    shopt -s nullglob
+    for source in "$ROOT/$source_dir"/$match; do
+      name=$(basename "$source")
+      # The manifest's exclude value is a glob, not a literal name.
+      # shellcheck disable=SC2053
+      if [ -n "$exclude" ] && [[ "$name" == $exclude ]]; then
+        continue
+      fi
+      if [ "$project_scope" = yes ] && ! selected_skill "$name"; then
+        continue
+      fi
+      found=$((found + 1))
+      wire_link "$source" "$destination/$name"
+    done
+    shopt -u nullglob
+
+    [ "$found" -gt 0 ] || {
+      if [ "$project_scope" = yes ] && [ ${#SKILLS[@]} -gt 0 ]; then
+        continue
+      fi
+      die "source pattern matched nothing: $source_dir/$match"
+    }
+
+    if [ "$project_scope" = yes ] && [ "$(jq -r '.scanUnmanaged // false' <<<"$group")" = true ]; then
+      scan_unmanaged "$destination"
+    fi
+  done < <(jq -c ".${key}[]" "$manifest")
+
+}
+
+skill_exists() {
+  local requested=$1 manifest source_dir catalog
+  for manifest in "${MANIFESTS[@]}"; do
+    while IFS= read -r source_dir; do
+      [ -e "$ROOT/$source_dir/$requested" ] && return 0
+    done < <(jq -r '.projectLinks[].sourceDir' "$manifest")
+    while IFS= read -r catalog; do
+      jq -e --arg requested "$requested" \
+        'any(.commands | to_entries[];
+          ((.value.skill // .key) == $requested) and
+          (.value.source | startswith("engineering/")))' \
+        "$ROOT/$catalog" >/dev/null 2>&1 && return 0
+    done < <(jq -r '.commandRenders[].catalog' "$manifest")
+  done
+  return 1
+}
+
+validate_skills() {
+  local requested
+  for requested in "${SKILLS[@]}"; do
+    case "$requested" in
+      ""|.|..|*/*) die "invalid project skill name: $requested" ;;
+    esac
+    skill_exists "$requested" || die "unknown project skill: $requested"
+  done
+}
+
+wire_manifest() {
+  local manifest=$1 name source destination prefix strategy source_dir catalog metadata format target
+  local global_destination project_destination
+  local path owner reason
+  name=$(jq -r '.harness' "$manifest")
+  printf '[%s]\n' "$name"
+
+  wire_groups "$manifest" links no
+  wire_groups "$manifest" projectLinks yes
+
+  while IFS=$'\t' read -r source destination prefix; do
+    source="$ROOT/$source"
+    destination=$(expand_home "$destination")
+    [ -f "$source" ] || die "import source missing: $source"
+    wire_import "$source" "$destination" "$prefix"
+  done < <(jq -r '.imports[] | [.source, .destination, .prefix] | @tsv' "$manifest")
+
+  while IFS=$'\t' read -r source destination strategy; do
+    source="$ROOT/$source"
+    destination=$(expand_home "$destination")
+    [ -f "$source" ] || die "JSON merge source missing: $source"
+    wire_json_merge "$source" "$destination" "$strategy"
+  done < <(jq -r '.jsonMerges[] | [.source, .destination, .strategy] | @tsv' "$manifest")
+
+  while IFS=$'\t' read -r source_dir catalog metadata destination format target; do
+    destination=$(expand_home "$destination")
+    render_agents "$source_dir" "$ROOT/$catalog" "$ROOT/$metadata" "$destination" "$format" "$target"
+  done < <(jq -r '.agentRenders[] | [.sourceDir, .catalog, .metadata, .destination, .format, .target] | @tsv' "$manifest")
+
+  while IFS=$'\t' read -r catalog global_destination project_destination format target; do
+    render_commands "$ROOT/$catalog" "$global_destination" "$project_destination" "$format" "$target"
+  done < <(jq -r '.commandRenders[] | [.catalog, .globalDestination, .projectDestination, .format, .target] | @tsv' "$manifest")
+
+  while IFS=$'\t' read -r path owner reason; do
+    path=$(expand_home "$path")
+    printf '  external   %s (%s: %s)\n' "$path" "$owner" "$reason"
+  done < <(jq -r '.external[] | [.path, .owner, .reason] | @tsv' "$manifest")
+
+  while IFS=$'\t' read -r path reason; do
+    path=$(expand_home "$path")
+    printf '  deferred   %s (%s)\n' "$path" "$reason"
+  done < <(jq -r '.deferred[] | [.path, .reason] | @tsv' "$manifest")
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run) MODE=dry-run ;;
+    --apply) MODE=apply ;;
+    --harness)
+      [ $# -ge 2 ] || die "--harness requires a name"
+      HARNESS=$2
+      shift
+      ;;
+    --project)
+      [ $# -ge 2 ] || die "--project requires a path"
+      PROJECT=$2
+      shift
+      ;;
+    --skill)
+      [ $# -ge 2 ] || die "--skill requires a name"
+      SKILLS+=("$2")
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *) die "unknown argument: $1" ;;
+  esac
+  shift
+done
+
+command -v jq >/dev/null 2>&1 || die "jq is required"
+[ ${#SKILLS[@]} -eq 0 ] || [ -n "$PROJECT" ] || die "--skill requires --project"
+
+if [ -n "$PROJECT" ]; then
+  [ -d "$PROJECT" ] || die "project directory does not exist: $PROJECT"
+  PROJECT=$(cd "$PROJECT" && pwd -P)
+fi
+
+MANIFESTS=()
+if [ -n "$HARNESS" ]; then
+  [ -f "$ROOT/harness/$HARNESS/wiring.json" ] || die "unknown harness: $HARNESS"
+  MANIFESTS+=("$ROOT/harness/$HARNESS/wiring.json")
+else
+  shopt -s nullglob
+  MANIFESTS=("$ROOT"/harness/*/wiring.json)
+  shopt -u nullglob
+  [ ${#MANIFESTS[@]} -gt 0 ] || die "no wiring manifests found"
+fi
+
+for manifest in "${MANIFESTS[@]}"; do
+  validate_manifest "$manifest"
+  preflight_manifest "$manifest"
+done
+
+[ ${#SKILLS[@]} -eq 0 ] || validate_skills
+
+for manifest in "${MANIFESTS[@]}"; do
+  wire_manifest "$manifest"
+done
+
+printf 'summary: %s change(s), %s unchanged, %s warning(s) [%s]\n' \
+  "$CHANGES" "$UNCHANGED" "$WARNINGS" "$MODE"
+
+[ "$WARNINGS" -eq 0 ]

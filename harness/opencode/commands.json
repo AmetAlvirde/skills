@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "commands": {
+    "standup": {
+      "source": "global/standup/SKILL.md",
+      "agent": "radar",
+      "modelRef": "agents.radar.default.opencode"
+    },
+    "hotwash": {
+      "source": "global/hotwash/SKILL.md",
+      "agent": "radar",
+      "modelRef": "agents.radar.default.opencode"
+    },
+    "codebase-map": {
+      "source": "engineering/codebase-map/SKILL.md",
+      "modelRef": "skillPins.codebase-map.opencode"
+    },
+    "codebase-review-retry": {
+      "source": "engineering/codebase-review/SKILL.md",
+      "skill": "codebase-review",
+      "kind": "retry",
+      "description": "Retry an inconclusive codebase review in a fresh xhigh turn",
+      "modelRef": "skillPins.codebase-review.retry.opencode"
+    },
+    "pr-review-retry": {
+      "source": "engineering/pr-review/SKILL.md",
+      "skill": "pr-review",
+      "kind": "retry",
+      "description": "Retry an inconclusive PR review in a fresh xhigh turn",
+      "modelRef": "skillPins.pr-review.retry.opencode"
+    },
+    "refactor-retry": {
+      "source": "engineering/refactor/SKILL.md",
+      "skill": "refactor",
+      "kind": "retry",
+      "description": "Retry an inconclusive refactor diagnosis in a fresh xhigh turn",
+      "modelRef": "skillPins.refactor.retry.opencode"
+    },
+    "codebase-grill": {
+      "source": "engineering/codebase-grill/SKILL.md",
+      "modelRef": "skillPins.codebase-grill.opencode"
+    }
+  }
+}

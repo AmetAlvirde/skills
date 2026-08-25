@@ -1,58 +1,50 @@
 ---
 name: project-setup
 description: >-
-  Wire a repo to consume the engineering skill set from ~/Dev/skills: create
-  gitignored per-skill symlinks into the repo's real .claude/skills/, ensure the
-  global primitives are linked, and scaffold the vault project. Use on "set up
-  this project", "register this project", "wire up skills here", or when a repo
+  Wire a repo to consume the engineering skill set from ~/Dev/skills through
+  Claude Code, OpenCode, or both: create gitignored per-skill links through the
+  manifest executor and scaffold the vault project. Use on "set up this
+  project", "register this project", "wire up skills here", or when a repo
   should get the dev-flow skills. Idempotent.
 ---
 
 # project-setup
 
-Give a repo access to the `engineering/` skills without copying them. The
-symlinks point back to the single source of truth in `~/Dev/skills`. Idempotent:
-safe to re-run.
+Give a repo access to the `engineering/` skills without copying them. Skill
+links point back to `~/Dev/skills`; native files render from the same canonical
+sources. Idempotent: safe to re-run.
 
 Run from the target repo's root (its path is cwd).
 
-1. **Confirm the target**: the repo at cwd. Confirm which engineering skills to
-   link; default to all of `~/Dev/skills/engineering/`. Ask before linking a
-   subset.
-2. **Link the globals once** (idempotent): each `~/Dev/skills/global/<s>` →
-   `~/.claude/skills/<s>`. Skip any that already resolve there. Link the whole
-   `global/` tier, whatever `ls ~/Dev/skills/global/` holds; today that is
-   `map`, `grill`, `diverge`, `converge`, `handoff`, `standup`, `hotwash`,
-   `branch-prune`, `skill-setup`, `project-setup`, `unslop`. Then agents:
-   `~/Dev/skills/agents/<a>.md` → `~/.claude/agents/<a>.md` and commands:
-   `~/Dev/skills/commands/<c>.md` → `~/.claude/commands/<c>.md`. Also ensure
-   `~/.claude/CLAUDE.md` carries the voice-contract import (append
-   `@~/Dev/skills/global/unslop/VOICE.md` if absent). That is an `@` import, not
-   a symlink, and the only always-loaded file in the set.
-3. **Link the engineering skills per-skill** into a **real** dir. Create
-   `<repo>/.claude/skills/` if absent, then for each chosen skill
-   `ln -sfn ~/Dev/skills/engineering/<s> <repo>/.claude/skills/<s>`. Per-skill,
-   not a whole-dir link, so promoting one skill to `global/` later stays a
-   deliberate move.
-4. **Flag unmanaged dirs.** After linking, list anything in
-   `<repo>/.claude/skills/` that is a **real directory, not a symlink into
-   `~/Dev/skills`** (e.g. vendored or retired skill sets). Report each as
-   `unmanaged → review/remove`; never delete it. Removal is a deliberate act for
-   the operator, not a side effect of setup.
-5. **Gitignore the symlinks.** Ensure `<repo>/.gitignore` contains
-   `.claude/skills/`. The symlinks are never committed; the source of truth is
-   `~/Dev/skills`.
-6. **Scaffold the vault project.** If `~/Dev/notes/<project>/HEAD.md` is missing,
+1. **Confirm the target and selection.** The target is the repo at cwd. Ask
+   which active harnesses to wire: Claude Code, OpenCode, or both. Default to
+   both unless the user narrows it. Confirm which engineering skills to link;
+   default to all of `~/Dev/skills/engineering/` and ask before using a subset.
+2. **Run the manifest executor once per selected harness.** For each harness,
+   run `~/Dev/skills/harness/wire --harness <claude-code|opencode> --project
+   "$PWD" --apply`. For a subset, repeat the identical `--skill <name>`
+   selectors on every selected harness command. The executor owns global and
+   project output plus unmanaged-path reporting. Stop immediately if any run
+   reports a warning; leave every unmanaged path untouched.
+3. **Gitignore only generated project output.** Ensure `<repo>/.gitignore`
+   contains `.claude/skills/` when Claude Code was selected and
+   `.opencode/skills/` when OpenCode was selected. Also ignore each command the
+   executor rendered: the selected retry files under `.claude/commands/` and
+   the selected files under `.opencode/commands/`. Do not ignore either whole
+   command directory; a repo may own other commands. The links and rendered
+   adapters are never committed; the source of truth is `~/Dev/skills`.
+4. **Scaffold the vault project.** If `~/Dev/notes/<project>/HEAD.md` is missing,
    create the project folder and a `HEAD.md` per `~/Dev/notes/_saving.md` (read
    it; it is the source of truth for HEAD frontmatter and format), and register
    `<project>` in that file's project enum so the registry stays truthful. Match
    an existing project's `HEAD.md` in the vault.
-7. **Report.** List what was linked (globals, agents, per-repo skills), the
-   gitignore change, the vault path, and any **unmanaged dirs flagged** in step 4.
-   Note any skills the repo already had.
+5. **Report.** List the selected harnesses, what the executor linked or
+   rendered, the gitignore change, the vault path, and every unmanaged path it
+   flagged. Note any skills the repo already had. Tell OpenCode users to quit
+   and restart OpenCode so it discovers newly wired project skills.
 
 ## Filing
 
-Writes no artifact of its own; step 6 scaffolds the vault project per
+Writes no artifact of its own; step 4 scaffolds the vault project per
 `_saving.md`. If registering surfaced a reusable wiring lesson, run the valve
 (`_conventions.md` §4).

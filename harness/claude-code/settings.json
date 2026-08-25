@@ -1,0 +1,80 @@
+{
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "includeCoAuthoredBy": false,
+  "model": "claude-opus-5[1m]",
+  "effortLevel": "medium",
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "high"
+    },
+    "claude-fable-5": {
+      "effortLevel": "high"
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/main-branch-guard.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking the branch floor..."
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/daylog-trigger.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/daylog-trigger.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/daylog-trigger.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "autoMode": {
+    "soft_deny": [
+      "$defaults"
+    ],
+    "environment": [
+      "Treat a repository and its configured remotes as trusted only after inspecting their ownership and visibility.",
+      "Treat main and master as protected default branches unless the repository explicitly works there by design.",
+      "Sensitive data includes personal or confidential data, credentials, tokens, private keys, and regulated records. Keep it within its stated audience.",
+      "Public paste, gist, package, and artifact services are outside the trust boundary unless the user explicitly approves them.",
+      "Treat any namespace, host, environment, resource, or tag containing prod or production as a sensitive remote target.",
+      "Treat IAM, RBAC, networking, quota, and node-pool changes as protected infrastructure work."
+    ]
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "harness": "claude-code",
+  "links": [
+    {
+      "sourceDir": "global",
+      "match": "*",
+      "destination": "~/.claude/skills"
+    },
+    {
+      "sourceDir": "commands",
+      "match": "*.md",
+      "destination": "~/.claude/commands"
+    },
+    {
+      "sourceDir": "hooks",
+      "match": "*.sh",
+      "exclude": "*.test.sh",
+      "destination": "~/.claude/hooks"
+    }
+  ],
+  "projectLinks": [
+    {
+      "sourceDir": "engineering",
+      "match": "*",
+      "destination": ".claude/skills",
+      "selectable": true,
+      "scanUnmanaged": true
+    }
+  ],
+  "imports": [
+    {
+      "source": "global/unslop/VOICE.md",
+      "destination": "~/.claude/CLAUDE.md",
+      "prefix": "@"
+    }
+  ],
+  "jsonMerges": [
+    {
+      "source": "harness/claude-code/settings.json",
+      "destination": "~/.claude/settings.json",
+      "strategy": "claude-settings"
+    }
+  ],
+  "agentRenders": [
+    {
+      "sourceDir": "agents",
+      "catalog": "agents/manifest.json",
+      "metadata": "harness/claude-code/agents.json",
+      "destination": "~/.claude/agents",
+      "format": "claude-code",
+      "target": "claude-code"
+    }
+  ],
+  "commandRenders": [
+    {
+      "catalog": "harness/claude-code/commands.json",
+      "globalDestination": "~/.claude/commands",
+      "projectDestination": ".claude/commands",
+      "format": "claude-code",
+      "target": "claude-code"
+    }
+  ],
+  "external": [
+    {
+      "path": "~/.claude/hooks/herdr-agent-state.sh",
+      "owner": "herdr",
+      "reason": "Vendor-managed hook and settings entry; its installer owns updates."
+    },
+    {
+      "path": "~/.claude/statusline-command.sh",
+      "owner": "local",
+      "reason": "Machine-local status line; not part of the canonical skill suite."
+    }
+  ],
+  "deferred": []
+}

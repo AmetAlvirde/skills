@@ -1,0 +1,28 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "share": "disabled",
+  "autoupdate": false,
+  "default_agent": "build",
+  "subagent_depth": 1,
+  "instructions": [
+    "~/Dev/skills/global/unslop/VOICE.md"
+  ],
+  "skills": {
+    "paths": [
+      "~/Dev/skills/global"
+    ]
+  },
+  "permission": {
+    "external_directory": {
+      "*": "ask",
+      "~/Dev/notes/**": "allow"
+    },
+    "skill": {
+      "*": "allow",
+      "standup": "deny",
+      "hotwash": "deny",
+      "codebase-map": "deny",
+      "codebase-grill": "deny"
+    }
+  }
+}

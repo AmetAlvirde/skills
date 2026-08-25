@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "harness": "opencode",
+  "links": [
+    {
+      "sourceDir": "harness/opencode/plugins",
+      "match": "main-branch-guard.ts",
+      "destination": "~/.config/opencode/plugins"
+    },
+    {
+      "sourceDir": "harness/opencode/plugins",
+      "match": "daylog-trigger.ts",
+      "destination": "~/.config/opencode/plugins"
+    }
+  ],
+  "projectLinks": [
+    {
+      "sourceDir": "engineering",
+      "match": "*",
+      "destination": ".opencode/skills",
+      "selectable": true,
+      "scanUnmanaged": true
+    }
+  ],
+  "imports": [],
+  "jsonMerges": [],
+  "agentRenders": [
+    {
+      "sourceDir": "agents",
+      "catalog": "agents/manifest.json",
+      "metadata": "harness/opencode/agents.json",
+      "destination": "~/.config/opencode/agents",
+      "format": "opencode",
+      "target": "opencode"
+    }
+  ],
+  "commandRenders": [
+    {
+      "catalog": "harness/opencode/commands.json",
+      "globalDestination": "~/.config/opencode/commands",
+      "projectDestination": ".opencode/commands",
+      "format": "opencode",
+      "target": "opencode"
+    }
+  ],
+  "external": [
+    {
+      "path": "~/.config/opencode/plugins/herdr-agent-state.js",
+      "owner": "herdr",
+      "reason": "Vendor-managed plugin; its installer owns updates."
+    }
+  ],
+  "deferred": []
+}

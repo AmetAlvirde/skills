@@ -75,6 +75,11 @@ instead of re-teaching them.
 Rule of thumb: if the work is one turn, tier it in the skill; if it spans turns,
 tier it in the agent that owns it.
 
+A skill cannot promote itself during that turn. When a fixed-tier pass can end
+in a specific, costly uncertainty, give it an explicit retry command backed by
+`skillPins.<name>.retry`. The pass must state why; the command starts one fresh
+turn at the retry target. A target without an entry point is dead configuration.
+
 ## 5. Progressive disclosure
 
 Two costs, not one. **Context load** is tokens, what the model pays.
