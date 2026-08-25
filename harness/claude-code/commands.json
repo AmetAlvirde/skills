@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "commands": {
+    "codebase-review-retry": {
+      "source": "engineering/codebase-review/SKILL.md",
+      "skill": "codebase-review",
+      "kind": "retry",
+      "description": "Retry an inconclusive codebase review in a fresh xhigh turn",
+      "modelRef": "skillPins.codebase-review.retry.claude-code"
+    },
+    "pr-review-retry": {
+      "source": "engineering/pr-review/SKILL.md",
+      "skill": "pr-review",
+      "kind": "retry",
+      "description": "Retry an inconclusive PR review in a fresh xhigh turn",
+      "modelRef": "skillPins.pr-review.retry.claude-code"
+    },
+    "refactor-retry": {
+      "source": "engineering/refactor/SKILL.md",
+      "skill": "refactor",
+      "kind": "retry",
+      "description": "Retry an inconclusive refactor diagnosis in a fresh xhigh turn",
+      "modelRef": "skillPins.refactor.retry.claude-code"
+    }
+  }
+}

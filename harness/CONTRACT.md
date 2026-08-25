@@ -105,6 +105,9 @@ A tier has a lifetime:
 - A single-turn skill pin applies to the turn in which the skill loads.
 - A persona default persists for that persona's run.
 - An escalation is temporary and must be reported in the tier sign line.
+- A skill retry ends the default turn and starts one fresh command turn at the
+  configured retry target. It carries the first pass's reason and runs at most
+  once; a skill never changes its own model or effort in flight.
 
 Every persona's closing tier signature reports `model-id` and `effort`. A
 harness may use its native variant name in place of effort. The model is runtime
@@ -116,6 +119,11 @@ skill tool loads a skill. Explicit commands may pin a target. Natural-language
 skill invocation inherits the active agent tier. This is a measured degradation,
 not equivalent per-skill tiering. Do not replace the native skill tool until
 live use shows that degradation is unacceptable.
+
+`skillPins.<name>.default` is the native skill's fixed tier.
+`skillPins.<name>.retry` is valid only when both harnesses expose an explicit
+retry command that consumes it. The command copies the canonical skill body
+without invoking native skill loading, which would restore the default pin.
 
 `harness/opencode/openai` is the tested profile selector. It loads the base with
 `OPENCODE_CONFIG` and injects the OpenAI profile through
@@ -146,14 +154,16 @@ output, not editable sources.
 OpenCode exposes exactly four dialogue-bound skill adapters. `/standup` and
 `/hotwash` are global. `/codebase-map` and `/codebase-grill` are project-scoped.
 The same four skills remain denied to OpenCode's native skill tool and enter
-through commands instead.
+through commands instead. It also exposes project-scoped
+`/codebase-review-retry`, `/pr-review-retry`, and `/refactor-retry`; Claude Code
+renders the same three retry commands.
 
 Canonical descriptions and bodies come from each adapter's `SKILL.md`.
-`harness/opencode/commands.json` owns only adaptation metadata, source pointers,
+Each harness's command catalog owns only adaptation metadata, source pointers,
 and semantic model references. `harness/wire` renders the native files with
-`$ARGUMENTS` and the OpenAI model and variant resolved through `models.json`.
-`/standup` and `/hotwash` bind Radar for that command turn. The two codebase
-commands do not bind a persona.
+`$ARGUMENTS` and the model tier resolved through `models.json`. `/standup` and
+`/hotwash` bind Radar for that command turn. The five project commands do not
+bind a persona.
 
 In OpenCode `1.18.22`, a command's primary agent and model selection apply only
 to that command turn. The live TUI's selected-agent state does not change, so

@@ -367,11 +367,14 @@ canonical_description() {
 
 render_command() {
   local format=$1 target=$2 name=$3 source=$4 agent=$5 model_ref=$6 destination=$7
-  local models="$ROOT/harness/models.json" target_ref catalogue tier model_data model variant
+  local skill=$8 kind=$9 configured_description=${10}
+  local models="$ROOT/harness/models.json" target_ref catalogue tier model_data model level
   local description frontmatter marker temp current
 
-  [ "$format:$target" = opencode:opencode ] ||
-    die "unknown command render format and target: $format:$target"
+  case "$format:$target" in
+    claude-code:claude-code|opencode:opencode) ;;
+    *) die "unknown command render format and target: $format:$target" ;;
+  esac
   target_ref=$(jq -er --arg reference "$model_ref" \
     'getpath($reference | split("."))' "$models") ||
     die "model reference does not resolve for command $name: $model_ref"
@@ -383,30 +386,44 @@ render_command() {
     '.catalogues[$catalogue].targets[$tier]' "$models") ||
     die "model target does not resolve for command $name: $target_ref"
   model=$(jq -er '.model' <<<"$model_data")
-  variant=$(jq -er '.variant' <<<"$model_data")
-  description=$(canonical_description "$source")
+  description=$configured_description
+  [ -n "$description" ] || description=$(canonical_description "$source")
   [ -n "$description" ] || die "canonical command description missing: $source"
 
-  if [ -n "$agent" ]; then
-    frontmatter=$(jq -cn --arg description "$description" --arg agent "$agent" \
-      --arg model "$model" --arg variant "$variant" \
-      '{description:$description, agent:$agent, subtask:false, model:$model, variant:$variant}')
-  else
-    frontmatter=$(jq -cn --arg description "$description" --arg model "$model" \
-      --arg variant "$variant" \
-      '{description:$description, model:$model, variant:$variant}')
-  fi
+  case "$format" in
+    claude-code)
+      level=$(jq -er '.effort' <<<"$model_data")
+      frontmatter=$(jq -cn --arg description "$description" --arg model "$model" \
+        --arg effort "$level" '{description:$description, model:$model, effort:$effort}')
+      ;;
+    opencode)
+      level=$(jq -er '.variant' <<<"$model_data")
+      if [ -n "$agent" ]; then
+        frontmatter=$(jq -cn --arg description "$description" --arg agent "$agent" \
+          --arg model "$model" --arg variant "$level" \
+          '{description:$description, agent:$agent, subtask:false, model:$model, variant:$variant}')
+      else
+        frontmatter=$(jq -cn --arg description "$description" --arg model "$model" \
+          --arg variant "$level" \
+          '{description:$description, model:$model, variant:$variant}')
+      fi
+      ;;
+  esac
 
   marker="<!-- managed by harness/wire command; source: $model_ref from ${source#"$ROOT"/} -->"
   temp=$(mktemp "${TMPDIR:-/tmp}/skills-command.XXXXXX")
   {
     printf '%s\n' '---' "$frontmatter" '---' '' "$marker" ''
-    # OpenCode expands this command placeholder.
+    # Both command runtimes expand this placeholder.
     # shellcheck disable=SC2016
     printf 'Command arguments: $ARGUMENTS\n\n'
     if [ "$agent" = radar ]; then
       printf '%s\n\n' \
         'Radar is already active for this command turn. Execute canonical instructions that say to spawn @radar directly instead of spawning Radar again. This agent and model binding ends after the command turn.'
+    fi
+    if [ "$kind" = retry ]; then
+      printf "This is an explicit retry of \`%s\`, not an in-flight tier change. Apply the canonical instructions below at this command's configured retry tier without invoking the native \`%s\` skill, which carries its default pin. The command arguments contain the first pass's retry reason; report that reason with the findings. If this pass is still inconclusive, report the remaining uncertainty without requesting another retry.\n\n" \
+        "$skill" "$skill"
     fi
     printf '<!-- canonical body: %s -->\n' "${source#"$ROOT"/}"
     awk 'NR == 1 && $0 == "---" { frontmatter = 1; next }
@@ -449,11 +466,14 @@ render_command() {
 
 render_commands() {
   local catalog=$1 global_destination=$2 project_destination=$3 format=$4 target=$5
-  local name source agent model_ref destination
+  local name source skill kind description agent model_ref destination
 
   while IFS= read -r name; do
     source=$(jq -er --arg name "$name" '.commands[$name].source' "$catalog") ||
       die "command source missing: $name"
+    skill=$(jq -r --arg name "$name" '.commands[$name].skill // $name' "$catalog")
+    kind=$(jq -r --arg name "$name" '.commands[$name].kind // "canonical"' "$catalog")
+    description=$(jq -r --arg name "$name" '.commands[$name].description // ""' "$catalog")
     agent=$(jq -r --arg name "$name" '.commands[$name].agent // ""' "$catalog")
     model_ref=$(jq -er --arg name "$name" '.commands[$name].modelRef' "$catalog") ||
       die "command model reference missing: $name"
@@ -463,13 +483,13 @@ render_commands() {
         ;;
       engineering/*)
         [ -n "$PROJECT" ] || continue
-        selected_skill "$name" || continue
+        selected_skill "$skill" || continue
         destination="$PROJECT/$project_destination/$name.md"
         ;;
       *) die "command source has unknown scope: $source" ;;
     esac
     render_command "$format" "$target" "$name" "$ROOT/$source" "$agent" \
-      "$model_ref" "$destination"
+      "$model_ref" "$destination" "$skill" "$kind" "$description"
   done < <(jq -r '.commands | keys[]' "$catalog")
 }
 
@@ -513,7 +533,7 @@ validate_manifest() {
 }
 
 preflight_manifest() {
-  local manifest=$1 source_dir source strategy catalog metadata format target name model_ref
+  local manifest=$1 source_dir source strategy catalog metadata format target name skill kind model_ref
 
   while IFS= read -r source_dir; do
     [ -d "$ROOT/$source_dir" ] || die "source directory missing: $ROOT/$source_dir"
@@ -547,14 +567,22 @@ preflight_manifest() {
     [ -f "$ROOT/$catalog" ] || die "command catalog missing: $ROOT/$catalog"
     jq -e '.version == 1 and (.commands | type == "object")' "$ROOT/$catalog" >/dev/null ||
       die "invalid command catalog: $ROOT/$catalog"
-    [ "$format:$target" = opencode:opencode ] ||
-      die "invalid command render format and target: $format:$target"
+    case "$format:$target" in
+      claude-code:claude-code|opencode:opencode) ;;
+      *) die "invalid command render format and target: $format:$target" ;;
+    esac
     while IFS= read -r name; do
       source=$(jq -er --arg name "$name" '.commands[$name].source' "$ROOT/$catalog") ||
         die "command source missing: $name"
       [ -f "$ROOT/$source" ] || die "canonical command source missing: $ROOT/$source"
-      [ "$(basename "$(dirname "$source")")" = "$name" ] ||
+      skill=$(jq -r --arg name "$name" '.commands[$name].skill // $name' "$ROOT/$catalog")
+      [ "$(basename "$(dirname "$source")")" = "$skill" ] ||
         die "command name does not match canonical source: $name -> $source"
+      kind=$(jq -r --arg name "$name" '.commands[$name].kind // "canonical"' "$ROOT/$catalog")
+      case "$kind" in
+        canonical|retry) ;;
+        *) die "unknown command kind: $name -> $kind" ;;
+      esac
       model_ref=$(jq -er --arg name "$name" '.commands[$name].modelRef' "$ROOT/$catalog") ||
         die "command model reference missing: $name"
       jq -e --arg reference "$model_ref" 'getpath($reference | split(".")) | type == "string"' \
@@ -624,7 +652,9 @@ skill_exists() {
     done < <(jq -r '.projectLinks[].sourceDir' "$manifest")
     while IFS= read -r catalog; do
       jq -e --arg requested "$requested" \
-        '.commands[$requested].source | startswith("engineering/")' \
+        'any(.commands | to_entries[];
+          ((.value.skill // .key) == $requested) and
+          (.value.source | startswith("engineering/")))' \
         "$ROOT/$catalog" >/dev/null 2>&1 && return 0
     done < <(jq -r '.commandRenders[].catalog' "$manifest")
   done

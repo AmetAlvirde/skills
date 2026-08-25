@@ -62,9 +62,13 @@ agents/manifest.json + harness metadata + harness/models.json
   ↓ harness/wire render
 ~/.config/opencode/commands/<command>.md
 
-~/Dev/skills/engineering/{codebase-map,codebase-grill}/SKILL.md
+~/Dev/skills/engineering/<command-source>/SKILL.md
   ↓ harness/wire render with --project
 <repo>/.opencode/commands/<command>.md
+
+~/Dev/skills/engineering/{codebase-review,pr-review,refactor}/SKILL.md
+  ↓ harness/wire render with --project
+<repo>/.claude/commands/<skill>-retry.md
 
 ~/Dev/skills/commands/<command>.md      ← source (this repo)
   ↑ symlink
@@ -179,11 +183,12 @@ The base loads `global/unslop/VOICE.md`, discovers canonical global skills,
 allows vault access under `~/Dev/notes`, and denies dialogue-bound skills to the
 native skill tool. Native commands provide the four dialogue-bound human entry
 points: global `/standup` and `/hotwash`, plus project-scoped `/codebase-map`
-and `/codebase-grill`. The profile keeps OpenCode's built-in `build`, `plan`,
-`general`, and `explore` agents and adds the six canonical personas at mapped
-GPT variants. Start directly in one with `openai --agent ennio`, or switch with
-the native TUI agent selector. A command-bound primary agent still lasts only
-for its command turn.
+and `/codebase-grill`. Three project retry commands start a fresh xhigh pass
+only after `codebase-review`, `pr-review`, or `refactor` requests one. The
+profile keeps OpenCode's built-in `build`, `plan`, `general`, and `explore`
+agents and adds the six canonical personas at mapped GPT variants. Start
+directly in one with `openai --agent ennio`, or switch with the native TUI agent
+selector. A command-bound primary agent still lasts only for its command turn.
 
 The native branch guard runs only for OpenCode `bash` calls. It passes the
 command and native cwd to `hooks/main-branch-guard.sh`, which remains the sole
@@ -256,12 +261,12 @@ Single-turn disciplines pin `model`/`effort` in Claude-native **skill**
 frontmatter (resets next turn, which is correct for one-shot methods).
 Multi-turn/agentic work tiers via the **agent**, which holds the tier across the
 loop. The semantic assignments and each harness/provider target live in
-[`harness/models.json`](./harness/models.json). Claude's ceiling is Opus 5
-xhigh (Fable high while the subscription allows). Claude frontmatter pins exact
-model ids: canonical skill frontmatter carries skill pins, and rendered agent
-frontmatter carries persona pins. Never use a bare alias like `sonnet`, and
-never append a date suffix. The Claude session default in the settings baseline
-resolves through the same model map.
+[`harness/models.json`](./harness/models.json). Claude defaults to Opus 5 and
+its ceiling is xhigh; Fable is an explicit user selection. Claude frontmatter
+pins exact model ids: canonical skill frontmatter carries skill pins, and
+rendered agent frontmatter carries persona pins. Never use a bare alias like
+`sonnet`, and never append a date suffix. The Claude session default in the
+settings baseline resolves through the same model map.
 
 A pin's **lifetime** is the deciding factor, not the skill's size: a skill
 override resets at the next user prompt, so any loop that iterates with the
@@ -275,8 +280,8 @@ Agent tiers (default → escalation when a turn is genuinely stuck):
 | `@ennio`  | orchestrate        | Opus 5 high   | Opus 5 xhigh |
 | `@bit`    | implement/refactor | Opus 5 medium | Opus 5 high  |
 | `@vitruv` | spec/issues        | Opus 5 high   | Opus 5 xhigh |
-| `@tux`    | git                | Sonnet 5 med  | Opus 5 high  |
-| `@linn`   | docs / vault       | Sonnet 5 med  | Opus 5 high  |
+| `@tux`    | git                | Sonnet 5 med  | Opus 5 med   |
+| `@linn`   | docs / vault       | Sonnet 5 high | Opus 5 med   |
 | `@radar`  | state / briefings  | Opus 5 medium | Opus 5 high  |
 
 Single-turn skills self-tier: `codebase-map`, `codebase-grill`, `refactor`,
@@ -286,6 +291,13 @@ the agent that owns them: `prototype` and `implement` run as **@bit**, `spec`
 and `issues` as **@vitruv**, `update-docs` as **@linn**; the `review`,
 `design`, and `unslop` disciplines inherit the tier of the skill that composes
 them.
+
+`codebase-review`, `pr-review`, and `refactor` each have one explicit retry
+target: Opus 5 xhigh / GPT xhigh. A high pass may recommend its
+`/<skill>-retry <reason>` command only when an important finding, seam, or blast
+radius remains unverified. The command starts a new turn, carries the reason,
+and cannot retry itself. `retry` is distinct from agent `escalation`, which
+belongs to a persona run.
 
 Every agent signs its tier. Claude Code uses `— ran: <model-id> · effort:
 <tier>`; OpenCode uses `variant` in place of `effort`. The agent reports the
@@ -309,11 +321,15 @@ command-bound agent and model apply for one command turn and do not change the
 TUI's selected agent. Choose a durable persona with `openai --agent <name>` at
 startup or with the native TUI selector.
 
-OpenCode instead renders four command adapters from canonical skill sources.
+OpenCode instead renders seven command adapters from canonical skill sources.
 Global `/standup` and `/hotwash` bind Radar for their command turn.
 Project-scoped `/codebase-map` and `/codebase-grill` carry no agent binding.
-All four pass `$ARGUMENTS`, resolve their OpenAI model and variant through
-`harness/models.json`, and remain denied to the native skill tool.
+The three project-scoped `<skill>-retry` commands copy their canonical skill
+bodies into fresh xhigh command turns. Claude Code renders the same retry
+adapters because a loaded skill cannot promote itself there either. All
+adapters pass `$ARGUMENTS` and resolve their model tier through
+`harness/models.json`; the four dialogue-bound skills remain denied to
+OpenCode's native skill tool.
 
 ## Router
 
@@ -343,10 +359,13 @@ commit.** A router that lies is the named failure mode of this repo.
 | `issues`               | engineering | orchestrator* | Cut an approved spec into slice issues; runs as @vitruv, stops at those. |
 | `implement`            | engineering | orchestrator* | Build one reliable slice red→green; runs as @bit, commits via @tux.    |
 | `refactor`             | engineering | orchestrator* | Diagnose a refactor → refactor-diagnosis; build via `implement`.       |
+| `refactor-retry`       | engineering | command       | Retry a blocked refactor diagnosis in one fresh xhigh turn.           |
 | `adr`                  | engineering | orchestrator* | Record a qualifying architecture decision in-repo; keep the index.     |
 | `codebase-review`      | engineering | orchestrator* | Compose `review` against the local working diff.                       |
+| `codebase-review-retry` | engineering | command       | Retry a blocked codebase review in one fresh xhigh turn.              |
 | `pr-review`            | engineering | orchestrator* | Compose `review` against a GitHub PR.                                  |
-| `review`               | engineering | discipline    | Shared code-review method; composed by the two above, never direct.    |
+| `pr-review-retry`      | engineering | command       | Retry a blocked PR review in one fresh xhigh turn.                     |
+| `review`               | engineering | discipline    | Shared code-review method; composed by review front doors, never direct. |
 | `design`               | engineering | discipline    | Design vocabulary (seam, depth, adapter) + smell baseline; composed.   |
 | `update-docs`          | engineering | orchestrator* | Reconcile docs with the implementation; runs as @linn.                 |
 

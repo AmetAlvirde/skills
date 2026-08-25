@@ -64,6 +64,8 @@ effectively_denies_skill() {
 }
 
 HOME_DIR="$W/home"
+RETRY_SKILLS=(codebase-review pr-review refactor)
+RETRY_COMMANDS=(codebase-review-retry pr-review-retry refactor-retry)
 mkdir -p "$HOME_DIR"
 
 echo 'command dry-run'
@@ -77,9 +79,15 @@ for name in standup hotwash; do
   ok "command dry-run reports $name render" grep -Fq \
     "render     $DRY_HOME/.config/opencode/commands/$name.md" "$W/opencode-dry.out"
 done
-for name in codebase-map codebase-grill; do
+for name in codebase-map codebase-grill "${RETRY_COMMANDS[@]}"; do
   ok "command dry-run reports $name render" grep -Fq \
     "render     $DRY_PROJECT/.opencode/commands/$name.md" "$W/opencode-dry.out"
+done
+HOME="$DRY_HOME" "$WIRE" --harness claude-code --project "$DRY_PROJECT" \
+  >"$W/claude-dry.out"
+for name in "${RETRY_COMMANDS[@]}"; do
+  ok "Claude dry-run reports $name render" grep -Fq \
+    "render     $DRY_PROJECT/.claude/commands/$name.md" "$W/claude-dry.out"
 done
 ok 'command dry-run creates no global command directory' test \
   ! -e "$DRY_HOME/.config/opencode/commands"
@@ -129,13 +137,15 @@ if [ -f "$COMMAND_CATALOG" ]; then
       basename "$(dirname "$source")"
     fi
   done | sort | jq -Rsc 'split("\n") | map(select(length > 0))')
-  catalog_roster=$(jq -c '.commands | keys | sort' "$COMMAND_CATALOG")
+  catalog_roster=$(jq -c '[.commands | to_entries[] |
+    select((.value.kind // "canonical") == "canonical") | .key] | sort' "$COMMAND_CATALOG")
   denial_roster=$(jq -c '.permission.skill | to_entries |
     map(select(.value == "deny") | .key) | sort' "$ROOT/harness/opencode/opencode.jsonc")
   ok 'command catalog matches dialogue-bound skills' test "$catalog_roster" = "$expected_dialogue"
   ok 'base skill denial matches command catalog' test "$denial_roster" = "$catalog_roster"
   while IFS= read -r name; do
     source=$(jq -er --arg name "$name" '.commands[$name].source' "$COMMAND_CATALOG")
+    kind=$(jq -r --arg name "$name" '.commands[$name].kind // "canonical"' "$COMMAND_CATALOG")
     router_entry=$(awk -F'|' -v wanted="$name" '
       function clean(value) {
         gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
@@ -150,11 +160,15 @@ if [ -f "$COMMAND_CATALOG" ]; then
     router_layer=${router_entry%%$'\t'*}
     router_kind=${router_entry#*$'\t'}
     source_layer=${source%%/*}
-    case "$source_layer" in
-      global) expected_kind=user-invoked ;;
-      engineering) expected_kind=orchestrator ;;
-      *) expected_kind=invalid ;;
-    esac
+    if [ "$kind" = retry ]; then
+      expected_kind='command'
+    else
+      case "$source_layer" in
+        global) expected_kind=user-invoked ;;
+        engineering) expected_kind=orchestrator ;;
+        *) expected_kind=invalid ;;
+      esac
+    fi
     ok "$name catalog source matches Router layer" test "$source_layer" = "$router_layer"
     ok "$name Router kind is command-bound" test "$router_kind" = "$expected_kind"
   done < <(jq -r '.commands | keys[]' "$COMMAND_CATALOG")
@@ -173,7 +187,7 @@ PROJECT="$W/project"
 mkdir -p "$PROJECT"
 git init -q "$PROJECT"
 HOME="$HOME_DIR" "$WIRE" --harness opencode --project "$PROJECT" --apply >"$W/opencode-project.out"
-for name in codebase-map codebase-grill; do
+for name in codebase-map codebase-grill "${RETRY_COMMANDS[@]}"; do
   ok "project command renders $name" test -f "$PROJECT/.opencode/commands/$name.md"
 done
 ok 'OpenCode project skill applies' test -L "$PROJECT/.opencode/skills/design"
@@ -182,6 +196,9 @@ ok 'OpenCode project skill uses one-hop canonical target' test \
 
 HOME="$HOME_DIR" "$WIRE" --harness claude-code --project "$PROJECT" --apply \
   >"$W/claude-project.out"
+for name in "${RETRY_COMMANDS[@]}"; do
+  ok "Claude project renders $name" test -f "$PROJECT/.claude/commands/$name.md"
+done
 ok 'Claude project link coexists with OpenCode' test -L \
   "$PROJECT/.claude/skills/design"
 ok 'OpenCode project link remains beside Claude' test -L \
@@ -198,6 +215,17 @@ ok 'unselected project skill stays absent' test \
   ! -e "$FILTERED_PROJECT/.opencode/skills/codebase-grill"
 ok 'unrelated project skill stays absent' test \
   ! -e "$FILTERED_PROJECT/.opencode/skills/design"
+
+for skill in "${RETRY_SKILLS[@]}"; do
+  retry_project="$W/retry-$skill-project"
+  mkdir -p "$retry_project"
+  HOME="$HOME_DIR" "$WIRE" --harness opencode --project "$retry_project" \
+    --skill "$skill" --apply >"$W/opencode-$skill-retry.out"
+  ok "selecting $skill renders its retry command" test -f \
+    "$retry_project/.opencode/commands/$skill-retry.md"
+  ok "selecting $skill links its canonical skill" test -L \
+    "$retry_project/.opencode/skills/$skill"
+done
 
 HOME="$HOME_DIR" "$WIRE" --harness opencode --project "$PROJECT" --apply \
   >"$W/opencode-project-second.out"
@@ -263,9 +291,11 @@ ok 'foreign OpenCode project skill symlink is not replaced' test \
   "$W/foreign-design"
 
 if [ -f "$COMMAND_CATALOG" ]; then
-  for name in standup hotwash codebase-map codebase-grill; do
+  for name in standup hotwash codebase-map codebase-grill "${RETRY_COMMANDS[@]}"; do
     source=$(jq -er --arg name "$name" '.commands[$name].source' "$COMMAND_CATALOG")
     reference=$(jq -er --arg name "$name" '.commands[$name].modelRef' "$COMMAND_CATALOG")
+    kind=$(jq -r --arg name "$name" '.commands[$name].kind // "canonical"' "$COMMAND_CATALOG")
+    skill=$(jq -r --arg name "$name" '.commands[$name].skill // $name' "$COMMAND_CATALOG")
     case "$name" in
       standup|hotwash) command_file="$HOME_DIR/.config/opencode/commands/$name.md" ;;
       *) command_file="$PROJECT/.opencode/commands/$name.md" ;;
@@ -293,12 +323,55 @@ if [ -f "$COMMAND_CATALOG" ]; then
       else
         ok "$name has no agent binding" jq -e 'has("agent") | not' <<<"$command_json"
       fi
+      if [ "$kind" = retry ]; then
+        ok "$name marks a fresh invocation" grep -Fq \
+          'not an in-flight tier change' "$command_file"
+        ok "$name prevents native default reload" grep -Fq \
+          "without invoking the native \`$skill\` skill" "$command_file"
+      fi
     else
       ok "$name command available for metadata checks" false
     fi
   done
 fi
 
+for skill in "${RETRY_SKILLS[@]}"; do
+  claude_retry="$PROJECT/.claude/commands/$skill-retry.md"
+  claude_retry_json=$(frontmatter <"$claude_retry")
+  default_ref="skillPins.$skill.default.claude-code"
+  retry_ref="skillPins.$skill.retry.claude-code"
+  ok "Claude $skill retry maps xhigh model" test \
+    "$(jq -r '.model' <<<"$claude_retry_json")" = \
+    "$(semantic_target_field "$retry_ref" model)"
+  ok "Claude $skill retry maps xhigh effort" test \
+    "$(jq -r '.effort' <<<"$claude_retry_json")" = \
+    "$(semantic_target_field "$retry_ref" effort)"
+  ok "Claude $skill retry prevents native default reload" grep -Fq \
+    "without invoking the native \`$skill\` skill" "$claude_retry"
+  ok "$skill default remains high" test \
+    "$(semantic_target_field "$default_ref" effort)" = high
+  ok "$skill retry raises effort to xhigh" test \
+    "$(semantic_target_field "$retry_ref" effort)" = xhigh
+  ok "$skill model matches its default target" grep -Fqx \
+    "model: $(semantic_target_field "$default_ref" model)" \
+    "$ROOT/engineering/$skill/SKILL.md"
+  ok "$skill effort matches its default target" grep -Fqx \
+    "effort: $(semantic_target_field "$default_ref" effort)" \
+    "$ROOT/engineering/$skill/SKILL.md"
+  ok "$skill recommends its retry command" grep -Fq \
+    "/$skill-retry <reason>" "$ROOT/engineering/$skill/SKILL.md"
+done
+ok 'Claude settings default to configured Opus selection' test \
+  "$(jq -r '.model' "$ROOT/harness/claude-code/settings.json")" = \
+  "$(jq -r '.sessionDefaults["claude-code"].selection' "$MODELS")"
+session_model=$(semantic_target_field sessionDefaults.claude-code.target model)
+ok 'Claude session selection matches semantic target' test \
+  "$(jq -r '.sessionDefaults["claude-code"].selection' "$MODELS")" = \
+  "${session_model}[1m]"
+ok 'Claude session effort matches semantic target' test \
+  "$(jq -r --arg model "$session_model" '.modelSettings[$model].effortLevel' \
+    "$ROOT/harness/claude-code/settings.json")" = \
+  "$(semantic_target_field sessionDefaults.claude-code.target effort)"
 for name in ennio bit vitruv tux linn radar; do
   claude_file="$HOME_DIR/.claude/agents/$name.md"
   opencode_file="$HOME_DIR/.config/opencode/agents/$name.md"
@@ -356,6 +429,10 @@ if command -v opencode >/dev/null 2>&1; then
     ([.command.standup, .command.hotwash, .command["codebase-map"],
       .command["codebase-grill"]] |
       all(.model == "openai/gpt-5.6-sol" and (.variant == "medium" or .variant == "high")))
+      and ([.command["codebase-review-retry"], .command["pr-review-retry"],
+        .command["refactor-retry"]] |
+        all((has("agent") | not) and .model == "openai/gpt-5.6-sol" and
+          .variant == "xhigh"))
   ' \
     "$W/opencode-config.json"
   ok 'OpenCode debug config loads both managed plugins' jq -e '

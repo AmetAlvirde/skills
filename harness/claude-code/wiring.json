@@ -52,7 +52,15 @@
       "target": "claude-code"
     }
   ],
-  "commandRenders": [],
+  "commandRenders": [
+    {
+      "catalog": "harness/claude-code/commands.json",
+      "globalDestination": "~/.claude/commands",
+      "projectDestination": ".claude/commands",
+      "format": "claude-code",
+      "target": "claude-code"
+    }
+  ],
   "external": [
     {
       "path": "~/.claude/hooks/herdr-agent-state.sh",

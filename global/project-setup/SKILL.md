@@ -26,11 +26,13 @@ Run from the target repo's root (its path is cwd).
    selectors on every selected harness command. The executor owns global and
    project output plus unmanaged-path reporting. Stop immediately if any run
    reports a warning; leave every unmanaged path untouched.
-3. **Gitignore selected skill directories only.** Ensure `<repo>/.gitignore`
+3. **Gitignore only generated project output.** Ensure `<repo>/.gitignore`
    contains `.claude/skills/` when Claude Code was selected and
-   `.opencode/skills/` when OpenCode was selected. Do not add the unselected
-   harness directory. The links are never committed; the source of truth is
-   `~/Dev/skills`.
+   `.opencode/skills/` when OpenCode was selected. Also ignore each command the
+   executor rendered: the selected retry files under `.claude/commands/` and
+   the selected files under `.opencode/commands/`. Do not ignore either whole
+   command directory; a repo may own other commands. The links and rendered
+   adapters are never committed; the source of truth is `~/Dev/skills`.
 4. **Scaffold the vault project.** If `~/Dev/notes/<project>/HEAD.md` is missing,
    create the project folder and a `HEAD.md` per `~/Dev/notes/_saving.md` (read
    it; it is the source of truth for HEAD frontmatter and format), and register
