@@ -15,6 +15,15 @@
       "target": "opencode"
     }
   ],
+  "commandRenders": [
+    {
+      "catalog": "harness/opencode/commands.json",
+      "globalDestination": "~/.config/opencode/commands",
+      "projectDestination": ".opencode/commands",
+      "format": "opencode",
+      "target": "opencode"
+    }
+  ],
   "external": [
     {
       "path": "~/.config/opencode/plugins/herdr-agent-state.js",
@@ -23,10 +32,6 @@
     }
   ],
   "deferred": [
-    {
-      "path": "~/.config/opencode/commands",
-      "reason": "Native command binders land after portable personas."
-    },
     {
       "path": "~/.config/opencode/plugins/main-branch-guard.ts",
       "reason": "Native hook adapters land after persona rendering."

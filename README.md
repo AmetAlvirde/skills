@@ -36,10 +36,11 @@ governs how every skill here is authored. All write markdown artifacts into
 
 ## How they're wired
 
-Skills reach each harness through direct, gitignored symlinks. Native persona
-files are rendered because neither Claude Code nor OpenCode can import a shared
-agent body. `harness/wire` reads the manifests under `harness/*/wiring.json`;
-there is no installer per harness.
+Skills reach each harness through direct, gitignored symlinks where native
+discovery permits them. Persona files and bounded OpenCode command adapters are
+rendered when a runtime cannot import canonical content in the required native
+shape. `harness/wire` reads the manifests under `harness/*/wiring.json`; there
+is no installer per harness.
 
 ```
 ~/Dev/skills/global/<skill>/SKILL.md   ← source (this repo)
@@ -55,6 +56,14 @@ agents/manifest.json + harness metadata + harness/models.json
   ↓ harness/wire render
 ~/.claude/agents/<agent>.md            ← Claude-native runtime file
 ~/.config/opencode/agents/<agent>.md   ← OpenCode-native runtime file
+
+~/Dev/skills/global/{standup,hotwash}/SKILL.md
+  ↓ harness/wire render
+~/.config/opencode/commands/<command>.md
+
+~/Dev/skills/engineering/{codebase-map,codebase-grill}/SKILL.md
+  ↓ harness/wire render with --project
+<repo>/.opencode/commands/<command>.md
 
 ~/Dev/skills/commands/<command>.md      ← source (this repo)
   ↑ symlink
@@ -96,8 +105,8 @@ settings merge:
 ```
 
 Dry-run is the default. Add `--apply` to create or repair managed links, render
-agents, and merge settings. The executor replaces stale managed symlinks and
-previously rendered agents, but refuses foreign files or directories. It also
+agents and commands, and merge settings. The executor replaces stale managed
+symlinks and generated files, but refuses foreign files or directories. It also
 refuses to merge invalid JSON settings.
 
 To link every engineering skill into a repo:
@@ -124,6 +133,16 @@ Pi is deferred. The current MVP path is OpenCode `1.18.22` on
 ~/Dev/skills/harness/opencode/openai
 ```
 
+That global apply renders only `/standup` and `/hotwash`. Render the two
+engineering commands into a participating repository with:
+
+```sh
+~/Dev/skills/harness/wire --harness opencode --project /path/to/repo --apply
+```
+
+Repeat `--skill codebase-map` or `--skill codebase-grill` to narrow the
+project command set. A global apply never installs either engineering command.
+
 The launcher checks the CLI version, loads the provider-independent base, then
 applies `profiles/openai.jsonc` for that process. It does not replace the global
 OpenCode config. Quit and restart through the launcher after editing either
@@ -138,15 +157,17 @@ For a non-interactive check:
 
 The base loads `global/unslop/VOICE.md`, discovers canonical global skills,
 allows vault access under `~/Dev/notes`, and denies dialogue-bound skills to the
-native skill tool. The profile keeps OpenCode's built-in `build`, `plan`,
+native skill tool. Native commands provide the four dialogue-bound human entry
+points: global `/standup` and `/hotwash`, plus project-scoped `/codebase-map`
+and `/codebase-grill`. The profile keeps OpenCode's built-in `build`, `plan`,
 `general`, and `explore` agents and adds the six canonical personas at mapped
 GPT variants. Start directly in one with `openai --agent ennio`, or switch with
 the native TUI agent selector. A command-bound primary agent still lasts only
 for its command turn.
 
-Editing a `SKILL.md` here updates the skill everywhere immediately, with no
-copy step. Editing a persona prompt or its metadata requires rerunning the
-matching harness manifest.
+Editing a linked `SKILL.md` here updates the skill everywhere immediately.
+Editing a persona prompt, persona metadata, or a `SKILL.md` used by a rendered
+command requires rerunning the matching harness manifest.
 
 ## Invocation taxonomy
 
@@ -233,15 +254,26 @@ than presenting it as observed fact. Any escalation includes its reason.
 
 ## Commands
 
-`commands/` holds one boot command per agent: a prompt template that makes the
-main session **embody** that agent (you ARE it; not spawned as a sub-agent). Each
-file symlinks to `~/.claude/commands/<name>.md`, so
+For Claude Code, `commands/` holds one boot command per agent: a prompt template
+that makes the main session **embody** that agent (you ARE it; not spawned as a
+sub-agent). Each file symlinks to `~/.claude/commands/<name>.md`, so
 `/enn`, `/bit`, `/vitruv`, `/tux`, `/linn`, `/radar` resolve in any repo. `/enn`
 boots the orchestrator / command-post companion. **Bare** `/enn` orients across
 hq then stands by; `/enn <task>` orients only at what the task names and explores
 lazily, never reading hq to re-derive a scope it was handed. The other five boot
 a focused single-worker session. `project-setup` links the commands and renders
 the agents through the manifest executor.
+
+OpenCode does not install those boot templates. In OpenCode `1.18.22`, a
+command-bound agent and model apply for one command turn and do not change the
+TUI's selected agent. Choose a durable persona with `openai --agent <name>` at
+startup or with the native TUI selector.
+
+OpenCode instead renders four command adapters from canonical skill sources.
+Global `/standup` and `/hotwash` bind Radar for their command turn.
+Project-scoped `/codebase-map` and `/codebase-grill` carry no agent binding.
+All four pass `$ARGUMENTS`, resolve their OpenAI model and variant through
+`harness/models.json`, and remain denied to the native skill tool.
 
 ## Router
 

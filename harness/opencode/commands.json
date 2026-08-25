@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "commands": {
+    "standup": {
+      "source": "global/standup/SKILL.md",
+      "agent": "radar",
+      "modelRef": "agents.radar.default.opencode"
+    },
+    "hotwash": {
+      "source": "global/hotwash/SKILL.md",
+      "agent": "radar",
+      "modelRef": "agents.radar.default.opencode"
+    },
+    "codebase-map": {
+      "source": "engineering/codebase-map/SKILL.md",
+      "modelRef": "skillPins.codebase-map.opencode"
+    },
+    "codebase-grill": {
+      "source": "engineering/codebase-grill/SKILL.md",
+      "modelRef": "skillPins.codebase-grill.opencode"
+    }
+  }
+}

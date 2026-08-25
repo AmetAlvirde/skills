@@ -52,6 +52,7 @@
       "target": "claude-code"
     }
   ],
+  "commandRenders": [],
   "external": [
     {
       "path": "~/.claude/hooks/herdr-agent-state.sh",

@@ -27,7 +27,7 @@ The parenthetical text records implementation state or evidence still needed.
 | Capability | Claude Code | OpenCode | Pi |
 | --- | --- | --- | --- |
 | Model-invoked skills | native | native | unsupported (deferred) |
-| Human-only skill entry | native (`disable-model-invocation`) | adapted (command plus skill deny, planned) | unsupported (deferred) |
+| Human-only skill entry | native (`disable-model-invocation`) | adapted (rendered command plus native skill deny) | unsupported (deferred) |
 | Skill-triggered tier switch | native | degraded (active agent tier is inherited) | unsupported (deferred) |
 | Pre-tool veto | native hook | adapted (plugin throw, planned) | unsupported (veto spike deferred) |
 | Terminal session close | native `SessionEnd` | unsupported (no terminal event) | unsupported (deferred) |
@@ -56,8 +56,9 @@ unsupported in the table above.
 2. Natural-language requests can load model-invoked skills. Dialogue-bound
    skills remain human entry points and cannot be delegated as model-invoked
    skills.
-3. Canonical behavior comes from this repository at invocation time. A harness
-   must not install editable copies of skill or persona bodies.
+3. Canonical behavior has one editable source in this repository. A harness may
+   link it or render managed native output, but must not install a second
+   editable copy of a skill or persona body.
 4. Model and reasoning settings resolve through `models.json`. Native
    projections must match it.
 5. Personas keep their role boundaries through native permissions or an
@@ -137,12 +138,26 @@ the matching harness. `harness/wire` resolves the model target through
 symlink or a file carrying its generated marker. Rendered files are installed
 output, not editable sources.
 
-An OpenCode command binder may select a native primary agent and pass
-`$ARGUMENTS`, but the selection applies only to that command turn. The live
-TUI's selected-agent state does not change, so the next user turn returns to the
-previous agent. Persona boot must select the primary agent at startup, use the
-native TUI switch, or add a tested session-state mechanism. Prompt text carried
-in conversation history is not a model or permission switch.
+OpenCode exposes exactly four dialogue-bound skill adapters. `/standup` and
+`/hotwash` are global. `/codebase-map` and `/codebase-grill` are project-scoped.
+The same four skills remain denied to OpenCode's native skill tool and enter
+through commands instead.
+
+Canonical descriptions and bodies come from each adapter's `SKILL.md`.
+`harness/opencode/commands.json` owns only adaptation metadata, source pointers,
+and semantic model references. `harness/wire` renders the native files with
+`$ARGUMENTS` and the OpenAI model and variant resolved through `models.json`.
+`/standup` and `/hotwash` bind Radar for that command turn. The two codebase
+commands do not bind a persona.
+
+In OpenCode `1.18.22`, a command's primary agent and model selection apply only
+to that command turn. The live TUI's selected-agent state does not change, so
+the next user turn returns to the previous selection. Durable persona state
+requires launcher startup selection or the native TUI selector. Prompt text in
+conversation history is not a model or permission switch. The six
+`commands/*.md` persona boot templates remain Claude-only and must not be
+installed or described as OpenCode commands. This adapter adds no hook or
+plugin.
 
 ## Policy protocol
 
@@ -211,8 +226,17 @@ parity.
 ## Wiring and external state
 
 `harness/wire` reads `harness/*/wiring.json`. Manifests declare links, imports,
-JSON merges, native agent renders, project-scoped links, external integrations,
-and deferred config. Harness-specific installers are not allowed.
+JSON merges, native agent and command renders, project-scoped links, external
+integrations, and deferred config. Harness-specific installers are not allowed.
+
+The OpenCode command render declaration points to
+`harness/opencode/commands.json` and names separate global and project
+destinations. A global apply renders only `standup` and `hotwash`. Engineering
+adapters render under `<repo>/.opencode/commands/` only when `--project` is
+present, and `--skill` may narrow that set. This preserves the Router's project
+reach. Command renders support dry-run, carry a managed marker, replace only
+managed output, refuse foreign files and symlinks, and report unchanged output
+as idempotent.
 
 `harness/claude-code/settings.json` owns the portable Claude settings baseline:
 the suite's hook registrations, attribution policy, model defaults, and generic
