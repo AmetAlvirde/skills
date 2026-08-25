@@ -6,6 +6,11 @@
       "sourceDir": "harness/opencode/plugins",
       "match": "main-branch-guard.ts",
       "destination": "~/.config/opencode/plugins"
+    },
+    {
+      "sourceDir": "harness/opencode/plugins",
+      "match": "daylog-trigger.ts",
+      "destination": "~/.config/opencode/plugins"
     }
   ],
   "projectLinks": [],

@@ -79,6 +79,12 @@ agents/manifest.json + harness metadata + harness/models.json
   ↓ translates native bash calls into the canonical shell policy
 ~/Dev/skills/hooks/main-branch-guard.sh
 
+~/Dev/skills/harness/opencode/plugins/daylog-trigger.ts
+  ↑ one-hop managed symlink
+~/.config/opencode/plugins/daylog-trigger.ts
+  ↓ translates successful native authoring completions
+~/Dev/skills/hooks/daylog-trigger.sh
+
 ~/Dev/skills/global/unslop/VOICE.md    ← source (this repo)
   ↑ @-import, not a symlink
 ~/.claude/CLAUDE.md                    ← loaded every turn, in every project
@@ -139,9 +145,9 @@ Pi is deferred. The current MVP path is OpenCode `1.18.22` on
 ~/Dev/skills/harness/opencode/openai
 ```
 
-That global apply links the native branch guard plugin and renders the global
-`/standup` and `/hotwash` commands. Render the two engineering commands into a
-participating repository with:
+That global apply links the native branch guard and reduced daylog plugins, and
+renders the global `/standup` and `/hotwash` commands. Render the two engineering
+commands into a participating repository with:
 
 ```sh
 ~/Dev/skills/harness/wire --harness opencode --project /path/to/repo --apply
@@ -177,6 +183,20 @@ command and native cwd to `hooks/main-branch-guard.sh`, which remains the sole
 branch policy engine. A valid deny stops the tool with the shell hook's exact
 reason. Adapter errors and malformed policy output are logged and fail open,
 matching the shell hook's posture. Non-bash tools bypass the adapter.
+
+The reduced daylog adapter listens for native session creation and completed
+tool events. Successful `edit`, `write`, and `apply_patch` calls record activity;
+successful `bash` calls reach `hooks/daylog-trigger.sh`, which remains the sole
+authority on whether a command is authoring. Failed, read-only, unknown, and
+unrelated events do not mint false activity. A new session primes state without
+writing to the vault; a resumed session relies on the shell policy's existing
+first-authoring fallback. Tool `workdir` wins when present, otherwise the plugin
+directory is used. Every adapter or diagnostic failure is observable and fails
+open.
+
+OpenCode has no terminal event equivalent to Claude Code's `SessionEnd`. This
+plugin owns lazy minting and activity only; `/hotwash` owns authoritative
+closure. It does not use repeating idle events or process exit as substitutes.
 
 Editing a linked `SKILL.md` here updates the skill everywhere immediately.
 Editing a persona prompt, persona metadata, or a `SKILL.md` used by a rendered

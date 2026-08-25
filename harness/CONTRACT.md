@@ -31,6 +31,7 @@ The parenthetical text records implementation state or evidence still needed.
 | Skill-triggered tier switch | native | degraded (active agent tier is inherited) | unsupported (deferred) |
 | Pre-tool veto | native hook | adapted (shell-backed plugin throw) | unsupported (veto spike deferred) |
 | Terminal session close | native `SessionEnd` | unsupported (no terminal event) | unsupported (deferred) |
+| Lazy daylog minting and activity | native hooks | adapted (successful native completion events) | unsupported (deferred) |
 | Persistent persona boot | native command | adapted (startup agent selection; command binding lasts one turn) | unsupported (deferred) |
 | Voice loading | native global import | adapted (config `instructions`, verified) | unsupported (deferred) |
 | Global and project skill scopes | native | native | unsupported (deferred) |
@@ -45,7 +46,10 @@ ignores Claude Code's invocation and tier fields.
 An authenticated `openai/gpt-5.6-sol` smoke and an explicit model-invoked
 `skill` load passed through the OpenAI profile on 2026-08-24. The native branch
 guard adapter also passed a real refusal smoke in a throwaway repository. The
-CLI and `@opencode-ai/plugin` SDK are both pinned to `1.18.22`.
+daylog adapter passed a real smoke under an isolated HOME and notes vault: a
+successful read-only Bash call left activity unminted, while a successful
+authoring call minted the daylog and recorded its native session ID. The CLI and
+`@opencode-ai/plugin` SDK are both pinned to `1.18.22`.
 
 ## Required outcomes
 
@@ -224,8 +228,24 @@ console warning if logging itself fails.
 ### Daylog
 
 `hooks/daylog-trigger.sh` remains the MVP policy engine. An adapter normalizes
-successful authoring tools, including OpenCode `apply_patch`, and maps session
-creation where useful. It never throws.
+OpenCode's native event stream into the Claude-shaped payload that engine already
+tests. `session.created` becomes `SessionStart`, preserving the native session ID
+and directory without minting a daylog. A resumed session has no matching native
+event; its first successful authoring completion reaches `PostToolUse`, and the
+shell policy's existing mid-session fallback opens its state lazily.
+
+Only completed `edit`, `write`, `apply_patch`, and `bash` tool parts reach the
+policy. The adapter maps them to `Edit`, `Write`, `Edit`, and `Bash`
+respectively, preserving file, patch, or command input. It forwards every
+successful Bash completion so the canonical shell policy, not TypeScript,
+decides whether the command is authoring. Error, pending, and running states,
+unknown tools, read tools, and unrelated events record nothing.
+
+The policy process runs in the tool's nonempty `workdir` when supplied and the
+plugin directory otherwise; the same effective cwd appears in the payload.
+Malformed events, invalid workdirs, shell failures, and unexpected or malformed
+policy output are diagnosed through OpenCode logging and fail open. Diagnostic
+failure falls back to a guarded console warning. The adapter never throws.
 
 OpenCode has no event equivalent to terminal `SessionEnd`. The MVP contract
 assigns lazy minting and activity to the plugin and authoritative
@@ -248,11 +268,11 @@ reach. Command renders support dry-run, carry a managed marker, replace only
 managed output, refuse foreign files and symlinks, and report unchanged output
 as idempotent.
 
-The OpenCode manifest also links only
-`harness/opencode/plugins/main-branch-guard.ts` into the global plugin
-directory. The one-hop link follows the same dry-run and idempotence rules as
+The OpenCode manifest links only `harness/opencode/plugins/main-branch-guard.ts`
+and `harness/opencode/plugins/daylog-trigger.ts` into the global plugin
+directory. Each one-hop link follows the same dry-run and idempotence rules as
 the other managed links. Wiring refuses to replace foreign files or symlinks at
-that path. Herdr's neighboring plugin remains vendor-managed.
+either path. Herdr's neighboring plugin remains vendor-managed.
 
 `harness/claude-code/settings.json` owns the portable Claude settings baseline:
 the suite's hook registrations, attribution policy, model defaults, and generic

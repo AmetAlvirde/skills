@@ -85,19 +85,27 @@ ok 'command dry-run creates no global command directory' test \
   ! -e "$DRY_HOME/.config/opencode/commands"
 ok 'command dry-run creates no project command directory' test \
   ! -e "$DRY_PROJECT/.opencode/commands"
-ok 'plugin dry-run reports link' grep -Fq \
-  "link       $DRY_HOME/.config/opencode/plugins/main-branch-guard.ts -> $ROOT/harness/opencode/plugins/main-branch-guard.ts" \
-  "$W/opencode-dry.out"
+for name in main-branch-guard daylog-trigger; do
+  ok "plugin dry-run reports $name link" grep -Fq \
+    "link       $DRY_HOME/.config/opencode/plugins/$name.ts -> $ROOT/harness/opencode/plugins/$name.ts" \
+    "$W/opencode-dry.out"
+done
 ok 'plugin dry-run creates no plugin directory' test \
   ! -e "$DRY_HOME/.config/opencode/plugins"
+ok 'OpenCode wiring allowlists only managed plugins' jq -e '
+  [.links[] | select(.sourceDir == "harness/opencode/plugins") | .match] | sort ==
+    ["daylog-trigger.ts", "main-branch-guard.ts"]
+' "$ROOT/harness/opencode/wiring.json"
 
 echo 'clean render'
 HOME="$HOME_DIR" "$WIRE" --harness claude-code --apply >"$W/claude-first.out"
 HOME="$HOME_DIR" "$WIRE" --harness opencode --apply >"$W/opencode-first.out"
-PLUGIN="$HOME_DIR/.config/opencode/plugins/main-branch-guard.ts"
-ok 'OpenCode plugin is a symlink' test -L "$PLUGIN"
-ok 'OpenCode plugin uses one-hop canonical target' test \
-  "$(readlink "$PLUGIN")" = "$ROOT/harness/opencode/plugins/main-branch-guard.ts"
+for name in main-branch-guard daylog-trigger; do
+  plugin="$HOME_DIR/.config/opencode/plugins/$name.ts"
+  ok "OpenCode $name plugin is a symlink" test -L "$plugin"
+  ok "OpenCode $name plugin uses one-hop canonical target" test \
+    "$(readlink "$plugin")" = "$ROOT/harness/opencode/plugins/$name.ts"
+done
 
 echo 'OpenCode command roster and scope'
 COMMAND_CATALOG="$ROOT/harness/opencode/commands.json"
@@ -257,8 +265,9 @@ if command -v opencode >/dev/null 2>&1; then
       all(.model == "openai/gpt-5.6-sol" and (.variant == "medium" or .variant == "high")))
   ' \
     "$W/opencode-config.json"
-  ok 'OpenCode debug config loads main branch guard plugin' jq -e '
-    (.plugin // []) | any(contains("main-branch-guard.ts"))
+  ok 'OpenCode debug config loads both managed plugins' jq -e '
+    ((.plugin // []) | any(contains("main-branch-guard.ts"))) and
+    ((.plugin // []) | any(contains("daylog-trigger.ts")))
   ' "$W/opencode-config.json"
 fi
 
@@ -277,9 +286,11 @@ ok 'Claude render is idempotent' grep -Fq 'summary: 0 change(s)' "$W/claude-seco
 ok 'OpenCode render is idempotent' grep -Fq 'summary: 0 change(s)' "$W/opencode-second.out"
 ok 'OpenCode commands are idempotent' grep -Fq \
   "unchanged  $HOME_DIR/.config/opencode/commands/standup.md" "$W/opencode-second.out"
-ok 'OpenCode plugin is idempotent' grep -Fq \
-  "unchanged  $PLUGIN -> $ROOT/harness/opencode/plugins/main-branch-guard.ts" \
-  "$W/opencode-second.out"
+for name in main-branch-guard daylog-trigger; do
+  ok "OpenCode $name plugin is idempotent" grep -Fq \
+    "unchanged  $HOME_DIR/.config/opencode/plugins/$name.ts -> $ROOT/harness/opencode/plugins/$name.ts" \
+    "$W/opencode-second.out"
+done
 
 echo 'ownership boundaries'
 MIGRATE_HOME="$W/migrate-home"
@@ -337,6 +348,23 @@ ok 'foreign plugin file is reported' grep -Fq \
 ok 'foreign plugin file is not replaced' grep -Fqx \
   'foreign plugin definition' "$FOREIGN_PLUGIN_HOME/.config/opencode/plugins/main-branch-guard.ts"
 
+FOREIGN_DAYLOG_HOME="$W/foreign-daylog-home"
+mkdir -p "$FOREIGN_DAYLOG_HOME/.config/opencode/plugins"
+printf '%s\n' 'foreign daylog definition' \
+  >"$FOREIGN_DAYLOG_HOME/.config/opencode/plugins/daylog-trigger.ts"
+if HOME="$FOREIGN_DAYLOG_HOME" "$WIRE" --harness opencode --apply \
+  >"$W/foreign-daylog.out" 2>&1; then
+  foreign_daylog_status=0
+else
+  foreign_daylog_status=$?
+fi
+ok 'foreign daylog file returns a warning status' test "$foreign_daylog_status" -ne 0
+ok 'foreign daylog file is reported' grep -Fq \
+  "$FOREIGN_DAYLOG_HOME/.config/opencode/plugins/daylog-trigger.ts (refusing to replace)" \
+  "$W/foreign-daylog.out"
+ok 'foreign daylog file is not replaced' grep -Fqx \
+  'foreign daylog definition' "$FOREIGN_DAYLOG_HOME/.config/opencode/plugins/daylog-trigger.ts"
+
 FOREIGN_PLUGIN_LINK_HOME="$W/foreign-plugin-link-home"
 mkdir -p "$FOREIGN_PLUGIN_LINK_HOME/.config/opencode/plugins"
 ln -s "$W/foreign-plugin.ts" \
@@ -354,6 +382,24 @@ ok 'foreign plugin symlink is reported' grep -Fq \
 ok 'foreign plugin symlink is not replaced' test \
   "$(readlink "$FOREIGN_PLUGIN_LINK_HOME/.config/opencode/plugins/main-branch-guard.ts")" = \
   "$W/foreign-plugin.ts"
+
+FOREIGN_DAYLOG_LINK_HOME="$W/foreign-daylog-link-home"
+mkdir -p "$FOREIGN_DAYLOG_LINK_HOME/.config/opencode/plugins"
+ln -s "$W/foreign-daylog.ts" \
+  "$FOREIGN_DAYLOG_LINK_HOME/.config/opencode/plugins/daylog-trigger.ts"
+if HOME="$FOREIGN_DAYLOG_LINK_HOME" "$WIRE" --harness opencode --apply \
+  >"$W/foreign-daylog-link.out" 2>&1; then
+  foreign_daylog_link_status=0
+else
+  foreign_daylog_link_status=$?
+fi
+ok 'foreign daylog symlink returns a warning status' test "$foreign_daylog_link_status" -ne 0
+ok 'foreign daylog symlink is reported' grep -Fq \
+  "daylog-trigger.ts -> $W/foreign-daylog.ts (refusing to replace)" \
+  "$W/foreign-daylog-link.out"
+ok 'foreign daylog symlink is not replaced' test \
+  "$(readlink "$FOREIGN_DAYLOG_LINK_HOME/.config/opencode/plugins/daylog-trigger.ts")" = \
+  "$W/foreign-daylog.ts"
 
 echo
 echo "$pass passed, $fail failed"
