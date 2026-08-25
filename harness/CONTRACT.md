@@ -29,7 +29,7 @@ The parenthetical text records implementation state or evidence still needed.
 | Model-invoked skills | native | native | unsupported (deferred) |
 | Human-only skill entry | native (`disable-model-invocation`) | adapted (rendered command plus native skill deny) | unsupported (deferred) |
 | Skill-triggered tier switch | native | degraded (active agent tier is inherited) | unsupported (deferred) |
-| Pre-tool veto | native hook | adapted (plugin throw, planned) | unsupported (veto spike deferred) |
+| Pre-tool veto | native hook | adapted (shell-backed plugin throw) | unsupported (veto spike deferred) |
 | Terminal session close | native `SessionEnd` | unsupported (no terminal event) | unsupported (deferred) |
 | Persistent persona boot | native command | adapted (startup agent selection; command binding lasts one turn) | unsupported (deferred) |
 | Voice loading | native global import | adapted (config `instructions`, verified) | unsupported (deferred) |
@@ -43,8 +43,9 @@ when the supported CLI version changes. OpenCode recognizes Agent Skill
 ignores Claude Code's invocation and tier fields.
 
 An authenticated `openai/gpt-5.6-sol` smoke and an explicit model-invoked
-`skill` load passed through the OpenAI profile on 2026-08-24. The CLI and
-`@opencode-ai/plugin` SDK are both pinned to `1.18.22`.
+`skill` load passed through the OpenAI profile on 2026-08-24. The native branch
+guard adapter also passed a real refusal smoke in a throwaway repository. The
+CLI and `@opencode-ai/plugin` SDK are both pinned to `1.18.22`.
 
 ## Required outcomes
 
@@ -208,8 +209,17 @@ tool.
 4. parses the script's deny JSON; and
 5. stops the native tool with the returned reason.
 
-Malformed adapter output fails open, matching the shell policy. Adapter load
-failure must be visible in tests and startup diagnostics.
+`harness/opencode/plugins/main-branch-guard.ts` implements that adapter for
+OpenCode's native `bash` tool. It sends the session ID, command, and effective
+cwd in the Claude-shaped bridge payload. The shell process runs in
+`output.args.workdir` when the call supplies one, otherwise in the plugin's
+`directory`.
+
+Empty output allows the tool. A valid deny response throws an `Error` whose
+message is the shell policy's exact refusal reason. Malformed arguments,
+malformed nonempty output, shell execution failures, and diagnostic failures
+all fail open. Adapter failures go to OpenCode's application log, with a guarded
+console warning if logging itself fails.
 
 ### Daylog
 
@@ -237,6 +247,12 @@ present, and `--skill` may narrow that set. This preserves the Router's project
 reach. Command renders support dry-run, carry a managed marker, replace only
 managed output, refuse foreign files and symlinks, and report unchanged output
 as idempotent.
+
+The OpenCode manifest also links only
+`harness/opencode/plugins/main-branch-guard.ts` into the global plugin
+directory. The one-hop link follows the same dry-run and idempotence rules as
+the other managed links. Wiring refuses to replace foreign files or symlinks at
+that path. Herdr's neighboring plugin remains vendor-managed.
 
 `harness/claude-code/settings.json` owns the portable Claude settings baseline:
 the suite's hook registrations, attribution policy, model defaults, and generic

@@ -1,7 +1,13 @@
 {
   "version": 1,
   "harness": "opencode",
-  "links": [],
+  "links": [
+    {
+      "sourceDir": "harness/opencode/plugins",
+      "match": "main-branch-guard.ts",
+      "destination": "~/.config/opencode/plugins"
+    }
+  ],
   "projectLinks": [],
   "imports": [],
   "jsonMerges": [],
@@ -31,10 +37,5 @@
       "reason": "Vendor-managed plugin; its installer owns updates."
     }
   ],
-  "deferred": [
-    {
-      "path": "~/.config/opencode/plugins/main-branch-guard.ts",
-      "reason": "Native hook adapters land after persona rendering."
-    }
-  ]
+  "deferred": []
 }

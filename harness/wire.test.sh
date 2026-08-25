@@ -85,10 +85,19 @@ ok 'command dry-run creates no global command directory' test \
   ! -e "$DRY_HOME/.config/opencode/commands"
 ok 'command dry-run creates no project command directory' test \
   ! -e "$DRY_PROJECT/.opencode/commands"
+ok 'plugin dry-run reports link' grep -Fq \
+  "link       $DRY_HOME/.config/opencode/plugins/main-branch-guard.ts -> $ROOT/harness/opencode/plugins/main-branch-guard.ts" \
+  "$W/opencode-dry.out"
+ok 'plugin dry-run creates no plugin directory' test \
+  ! -e "$DRY_HOME/.config/opencode/plugins"
 
 echo 'clean render'
 HOME="$HOME_DIR" "$WIRE" --harness claude-code --apply >"$W/claude-first.out"
 HOME="$HOME_DIR" "$WIRE" --harness opencode --apply >"$W/opencode-first.out"
+PLUGIN="$HOME_DIR/.config/opencode/plugins/main-branch-guard.ts"
+ok 'OpenCode plugin is a symlink' test -L "$PLUGIN"
+ok 'OpenCode plugin uses one-hop canonical target' test \
+  "$(readlink "$PLUGIN")" = "$ROOT/harness/opencode/plugins/main-branch-guard.ts"
 
 echo 'OpenCode command roster and scope'
 COMMAND_CATALOG="$ROOT/harness/opencode/commands.json"
@@ -248,6 +257,9 @@ if command -v opencode >/dev/null 2>&1; then
       all(.model == "openai/gpt-5.6-sol" and (.variant == "medium" or .variant == "high")))
   ' \
     "$W/opencode-config.json"
+  ok 'OpenCode debug config loads main branch guard plugin' jq -e '
+    (.plugin // []) | any(contains("main-branch-guard.ts"))
+  ' "$W/opencode-config.json"
 fi
 
 cp "$HOME_DIR/.config/opencode/commands/standup.md" "$W/standup-canonical.md"
@@ -265,6 +277,9 @@ ok 'Claude render is idempotent' grep -Fq 'summary: 0 change(s)' "$W/claude-seco
 ok 'OpenCode render is idempotent' grep -Fq 'summary: 0 change(s)' "$W/opencode-second.out"
 ok 'OpenCode commands are idempotent' grep -Fq \
   "unchanged  $HOME_DIR/.config/opencode/commands/standup.md" "$W/opencode-second.out"
+ok 'OpenCode plugin is idempotent' grep -Fq \
+  "unchanged  $PLUGIN -> $ROOT/harness/opencode/plugins/main-branch-guard.ts" \
+  "$W/opencode-second.out"
 
 echo 'ownership boundaries'
 MIGRATE_HOME="$W/migrate-home"
@@ -304,6 +319,41 @@ ok 'foreign command is reported' grep -Fq \
   "$W/foreign-command.out"
 ok 'foreign command is not replaced' grep -Fqx \
   'foreign command definition' "$FOREIGN_COMMAND_HOME/.config/opencode/commands/standup.md"
+
+FOREIGN_PLUGIN_HOME="$W/foreign-plugin-home"
+mkdir -p "$FOREIGN_PLUGIN_HOME/.config/opencode/plugins"
+printf '%s\n' 'foreign plugin definition' \
+  >"$FOREIGN_PLUGIN_HOME/.config/opencode/plugins/main-branch-guard.ts"
+if HOME="$FOREIGN_PLUGIN_HOME" "$WIRE" --harness opencode --apply \
+  >"$W/foreign-plugin.out" 2>&1; then
+  foreign_plugin_status=0
+else
+  foreign_plugin_status=$?
+fi
+ok 'foreign plugin file returns a warning status' test "$foreign_plugin_status" -ne 0
+ok 'foreign plugin file is reported' grep -Fq \
+  "$FOREIGN_PLUGIN_HOME/.config/opencode/plugins/main-branch-guard.ts (refusing to replace)" \
+  "$W/foreign-plugin.out"
+ok 'foreign plugin file is not replaced' grep -Fqx \
+  'foreign plugin definition' "$FOREIGN_PLUGIN_HOME/.config/opencode/plugins/main-branch-guard.ts"
+
+FOREIGN_PLUGIN_LINK_HOME="$W/foreign-plugin-link-home"
+mkdir -p "$FOREIGN_PLUGIN_LINK_HOME/.config/opencode/plugins"
+ln -s "$W/foreign-plugin.ts" \
+  "$FOREIGN_PLUGIN_LINK_HOME/.config/opencode/plugins/main-branch-guard.ts"
+if HOME="$FOREIGN_PLUGIN_LINK_HOME" "$WIRE" --harness opencode --apply \
+  >"$W/foreign-plugin-link.out" 2>&1; then
+  foreign_plugin_link_status=0
+else
+  foreign_plugin_link_status=$?
+fi
+ok 'foreign plugin symlink returns a warning status' test "$foreign_plugin_link_status" -ne 0
+ok 'foreign plugin symlink is reported' grep -Fq \
+  "main-branch-guard.ts -> $W/foreign-plugin.ts (refusing to replace)" \
+  "$W/foreign-plugin-link.out"
+ok 'foreign plugin symlink is not replaced' test \
+  "$(readlink "$FOREIGN_PLUGIN_LINK_HOME/.config/opencode/plugins/main-branch-guard.ts")" = \
+  "$W/foreign-plugin.ts"
 
 echo
 echo "$pass passed, $fail failed"

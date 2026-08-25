@@ -73,6 +73,12 @@ agents/manifest.json + harness metadata + harness/models.json
   ↑ symlink, plus an entry in ~/.claude/settings.json
 ~/.claude/hooks/<hook>.sh              ← runs on every matching tool call
 
+~/Dev/skills/harness/opencode/plugins/main-branch-guard.ts
+  ↑ one-hop managed symlink
+~/.config/opencode/plugins/main-branch-guard.ts
+  ↓ translates native bash calls into the canonical shell policy
+~/Dev/skills/hooks/main-branch-guard.sh
+
 ~/Dev/skills/global/unslop/VOICE.md    ← source (this repo)
   ↑ @-import, not a symlink
 ~/.claude/CLAUDE.md                    ← loaded every turn, in every project
@@ -133,8 +139,9 @@ Pi is deferred. The current MVP path is OpenCode `1.18.22` on
 ~/Dev/skills/harness/opencode/openai
 ```
 
-That global apply renders only `/standup` and `/hotwash`. Render the two
-engineering commands into a participating repository with:
+That global apply links the native branch guard plugin and renders the global
+`/standup` and `/hotwash` commands. Render the two engineering commands into a
+participating repository with:
 
 ```sh
 ~/Dev/skills/harness/wire --harness opencode --project /path/to/repo --apply
@@ -146,7 +153,7 @@ project command set. A global apply never installs either engineering command.
 The launcher checks the CLI version, loads the provider-independent base, then
 applies `profiles/openai.jsonc` for that process. It does not replace the global
 OpenCode config. Quit and restart through the launcher after editing either
-file; OpenCode does not reload config in a running process.
+config file or the plugin; OpenCode loads them only at process startup.
 
 For a non-interactive check:
 
@@ -164,6 +171,12 @@ and `/codebase-grill`. The profile keeps OpenCode's built-in `build`, `plan`,
 GPT variants. Start directly in one with `openai --agent ennio`, or switch with
 the native TUI agent selector. A command-bound primary agent still lasts only
 for its command turn.
+
+The native branch guard runs only for OpenCode `bash` calls. It passes the
+command and native cwd to `hooks/main-branch-guard.sh`, which remains the sole
+branch policy engine. A valid deny stops the tool with the shell hook's exact
+reason. Adapter errors and malformed policy output are logged and fail open,
+matching the shell hook's posture. Non-bash tools bypass the adapter.
 
 Editing a linked `SKILL.md` here updates the skill everywhere immediately.
 Editing a persona prompt, persona metadata, or a `SKILL.md` used by a rendered

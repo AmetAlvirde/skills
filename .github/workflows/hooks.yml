@@ -1,8 +1,8 @@
 name: hooks
 
-# Runs every hook suite in hooks/*.test.sh. The suites build real throwaway git
-# repos and pass identity inline, so no `git config` step is needed; `jq` is
-# their only external dependency and is preinstalled on GitHub-hosted runners.
+# Runs the shell hook, OpenCode adapter, and harness wiring suites. The shell
+# suites build real throwaway git repos and pass identity inline, so no
+# `git config` step is needed; `jq` is preinstalled on GitHub-hosted runners.
 #
 # Fail-closed by construction. The suite this workflow was written for exists
 # because its own `decide()` once read empty stdout as ALLOWED — and the hook
@@ -26,6 +26,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install OpenCode plugin dependencies
+        working-directory: harness/opencode
+        run: npm ci
+
+      - name: Run OpenCode plugin suite
+        working-directory: harness/opencode
+        run: npm test
+
+      - name: Run wiring suite
+        run: bash harness/wire.test.sh
 
       - name: Run hook suites
         shell: bash

@@ -61,6 +61,14 @@ wire_link() {
       UNCHANGED=$((UNCHANGED + 1))
       return
     fi
+    case "$current" in
+      "$ROOT"/*) ;;
+      *)
+        printf '  unmanaged  %s -> %s (refusing to replace)\n' "$destination" "$current"
+        WARNINGS=$((WARNINGS + 1))
+        return
+        ;;
+    esac
     printf '  relink     %s -> %s (was %s)\n' "$destination" "$source" "$current"
     CHANGES=$((CHANGES + 1))
     [ "$MODE" = apply ] && ln -sfn "$source" "$destination"
