@@ -31,8 +31,8 @@ The parenthetical text records implementation state or evidence still needed.
 | Skill-triggered tier switch | native | degraded (active agent tier is inherited) | unsupported (deferred) |
 | Pre-tool veto | native hook | adapted (plugin throw, planned) | unsupported (veto spike deferred) |
 | Terminal session close | native `SessionEnd` | unsupported (no terminal event) | unsupported (deferred) |
-| Persistent persona boot | native command | unsupported until the persistence spike resolves | unsupported (deferred) |
-| Voice loading | native global import | adapted (config `instructions`, planned) | unsupported (deferred) |
+| Persistent persona boot | native command | adapted (startup agent selection; command binding lasts one turn) | unsupported (deferred) |
+| Voice loading | native global import | adapted (config `instructions`, verified) | unsupported (deferred) |
 | Global and project skill scopes | native | native | unsupported (deferred) |
 | Positional command arguments | native `$ARGUMENTS` | native `$ARGUMENTS` | unsupported (deferred) |
 | Native subagents | native | native | unsupported (deferred) |
@@ -41,6 +41,10 @@ OpenCode facts in this table were verified against CLI `1.18.22`. Re-test them
 when the supported CLI version changes. OpenCode recognizes Agent Skill
 `name`, `description`, `license`, `compatibility`, and `metadata` fields. It
 ignores Claude Code's invocation and tier fields.
+
+An authenticated `openai/gpt-5.6-sol` smoke and an explicit model-invoked
+`skill` load passed through the OpenAI profile on 2026-08-24. The CLI and
+`@opencode-ai/plugin` SDK are both pinned to `1.18.22`.
 
 ## Required outcomes
 
@@ -106,20 +110,37 @@ skill invocation inherits the active agent tier. This is a measured degradation,
 not equivalent per-skill tiering. Do not replace the native skill tool until
 live use shows that degradation is unacceptable.
 
+`harness/opencode/openai` is the tested profile selector. It loads the base with
+`OPENCODE_CONFIG` and injects the OpenAI profile through
+`OPENCODE_CONFIG_CONTENT`, then starts a new OpenCode process. The resolved
+config and an authenticated GPT call proved the selection. OpenCode reads config
+only at startup, so changing either file requires a restart.
+
 ## Personas and commands
 
 Harness metadata must not leak contradictory model, effort, or permission text
-into another provider's prompt. The portable persona shape depends on two
-spikes: whether Claude agent definitions can import a body, and how OpenCode's
-`{file:...}` handles frontmatter.
+into another provider's prompt. OpenCode `1.18.22` substitutes `{file:...}`
+verbatim, including YAML frontmatter. A native OpenCode agent Markdown file
+strips its own frontmatter before using the body as the prompt. Pointing
+OpenCode config at canonical whole `agents/*.md` files is therefore rejected.
 
-Until those spikes resolve, canonical `agents/*.md` files stay intact. No
-harness may create a separately edited persona body.
+Claude Code `2.1.243` also leaves an `@/path/to/persona-body.md` reference in an
+agent body unexpanded. A control agent received the same instruction when it
+was inline, which rules out agent discovery or invocation as the cause. Claude
+agent definitions cannot import a shared prompt body.
 
-OpenCode command binders may select native agents and pass `$ARGUMENTS`, but
-they must prove whether a selected primary persona persists to the next user
-turn. If it does not, the adapter must use native primary-agent switching or a
-tested session-state mechanism.
+The persona refactor will extract one portable prompt per persona and keep
+harness metadata separate. `harness/wire` must render each native runtime agent
+from that prompt and its harness metadata. Rendered files are installed output,
+not editable sources. Until that refactor lands, canonical `agents/*.md` files
+stay intact.
+
+An OpenCode command binder may select a native primary agent and pass
+`$ARGUMENTS`, but the selection applies only to that command turn. The live
+TUI's selected-agent state does not change, so the next user turn returns to the
+previous agent. Persona boot must select the primary agent at startup, use the
+native TUI switch, or add a tested session-state mechanism. Prompt text carried
+in conversation history is not a model or permission switch.
 
 ## Policy protocol
 
@@ -179,22 +200,27 @@ failure must be visible in tests and startup diagnostics.
 successful authoring tools, including OpenCode `apply_patch`, and maps session
 creation where useful. It never throws.
 
-OpenCode has no event equivalent to terminal `SessionEnd`. The proposed MVP
-contract assigns lazy minting and activity to the plugin and authoritative
-closure to `/hotwash`. That decision still needs user approval. Repeating idle
-events and process-exit launchers must not be described as terminal-close
+OpenCode has no event equivalent to terminal `SessionEnd`. The MVP contract
+assigns lazy minting and activity to the plugin and authoritative
+closure to `/hotwash`. The user approved that contract on 2026-08-24. Repeating
+idle events and process-exit launchers must not be described as terminal-close
 parity.
 
 ## Wiring and external state
 
 `harness/wire` reads `harness/*/wiring.json`. Manifests declare links, imports,
-project-scoped links, external integrations, and deferred config. Harness-specific
-installers are not allowed.
+JSON merges, project-scoped links, external integrations, and deferred config.
+Harness-specific installers are not allowed.
+
+`harness/claude-code/settings.json` owns the portable Claude settings baseline:
+the suite's hook registrations, attribution policy, model defaults, and generic
+auto-mode policy. `harness/wire` deep-merges it into the installed settings.
+Baseline scalar values win, arrays retain distinct local additions, and keys the
+baseline does not name remain untouched. The hook merge replaces registrations
+for `main-branch-guard.sh` and `daylog-trigger.sh` by command name, then retains
+every other hook registration.
 
 Claude's `statusline-command.sh` is local and unversioned. Herdr owns
 `herdr-agent-state.*` and its settings entries on every harness. Wiring reports
-those paths but never creates, replaces, or edits them.
-
-The sanitized Claude settings baseline is still deferred inside Phase 0. Until
-it lands, this repository reproduces Claude-managed links and the voice import,
-but not the full `~/.claude/settings.json` policy.
+those paths but never creates, replaces, or edits them. The settings merge
+preserves Herdr's native registration as unrelated local state.

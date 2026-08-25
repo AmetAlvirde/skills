@@ -74,20 +74,26 @@ keeps it off orchestration turns entirely.
 
 A hook needs the settings entry as well as the link. The symlink alone does
 nothing. `main-branch-guard.sh` is registered as a `PreToolUse` hook on `Bash`.
-The sanitized Claude settings baseline has not landed yet, so the current
-manifest reports that config as deferred rather than claiming to reproduce it.
-It also reports `statusline-command.sh` and Herdr's agent-state hook as external;
-the executor never edits either one.
+The sanitized baseline at `harness/claude-code/settings.json` carries the suite's
+hook registrations, attribution policy, model defaults, and generic auto-mode
+policy. The executor deep-merges that baseline into the installed settings. It
+replaces only this repo's hook registrations and preserves unrelated local
+preferences, including Herdr's vendor-managed registration.
 
-Preview every Claude-managed global link and the voice import:
+`statusline-command.sh` and Herdr's agent-state files remain external. The
+manifest reports them, and the executor never creates or replaces them.
+
+Preview every Claude-managed global link, the voice import, and the settings
+merge:
 
 ```sh
 ~/Dev/skills/harness/wire --harness claude-code
 ```
 
-Dry-run is the default. Add `--apply` to create or repair managed links. The
-executor replaces stale symlinks but refuses to replace real files or
-directories.
+Dry-run is the default. Add `--apply` to create or repair managed links and
+merge settings. For link destinations, the executor replaces stale symlinks but
+refuses real files or directories. It also refuses to merge invalid JSON
+settings.
 
 To link every engineering skill into a repo:
 
@@ -104,6 +110,37 @@ repo's root. It creates per-skill symlinks into `<repo>/.claude/skills/` and
 gitignores them. A later harness phase will make `project-setup` select manifests
 and call `harness/wire`; this increment adds the executor without changing that
 skill's behavior.
+
+### OpenCode GPT smoke
+
+Pi is deferred. The current MVP path is OpenCode `1.18.22` on
+`openai/gpt-5.6-sol`:
+
+```sh
+~/Dev/skills/harness/opencode/openai
+```
+
+The launcher checks the CLI version, loads the provider-independent base, then
+applies `profiles/openai.jsonc` for that process. It does not replace the global
+OpenCode config. Quit and restart through the launcher after editing either
+file; OpenCode does not reload config in a running process.
+
+For a non-interactive check:
+
+```sh
+~/Dev/skills/harness/opencode/openai run --agent build \
+  "Reply with exactly OPENCODE_GPT_SMOKE_OK. Do not call tools."
+```
+
+The base loads `global/unslop/VOICE.md`, discovers canonical global skills,
+allows vault access under `~/Dev/notes`, and denies dialogue-bound skills to the
+native skill tool. The initial test uses OpenCode's built-in `build`, `plan`,
+`general`, and `explore` agents at mapped GPT variants. Canonical personas are
+not installed yet: `{file:...}` leaks their Claude frontmatter, and a
+command-bound primary agent does not persist onto the next live TUI turn.
+Claude agent bodies do not expand file imports either, so the persona refactor
+will render native runtime agents from one portable prompt plus harness
+metadata.
 
 Editing a `SKILL.md` here updates the skill everywhere immediately, with no
 copy step.
@@ -158,7 +195,8 @@ loop. The semantic assignments and each harness/provider target live in
 [`harness/models.json`](./harness/models.json). Claude's ceiling is Opus 5
 xhigh (Fable high while the subscription allows). Claude frontmatter pins exact
 model ids: `claude-opus-5`, `claude-sonnet-5`. Never a bare alias like `sonnet`,
-and never append a date suffix.
+and never append a date suffix. The Claude session default in the settings
+baseline resolves through the same model map.
 
 A pin's **lifetime** is the deciding factor, not the skill's size: a skill
 override resets at the next user prompt, so any loop that iterates with the

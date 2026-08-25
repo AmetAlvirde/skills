@@ -110,6 +110,99 @@ wire_import() {
   fi
 }
 
+merge_claude_settings() {
+  local source=$1 destination=$2 existing merged existing_sorted merged_sorted temp
+
+  if [ -e "$destination" ] && [ ! -f "$destination" ]; then
+    printf '  unmanaged  %s (settings target is not a file)\n' "$destination"
+    WARNINGS=$((WARNINGS + 1))
+    return
+  fi
+
+  jq -e . "$source" >/dev/null || die "invalid JSON merge source: $source"
+  if [ -f "$destination" ]; then
+    jq -e . "$destination" >/dev/null 2>&1 || {
+      printf '  unmanaged  %s (refusing to replace invalid JSON)\n' "$destination"
+      WARNINGS=$((WARNINGS + 1))
+      return
+    }
+    existing=$(jq -c . "$destination")
+  else
+    existing='{}'
+  fi
+
+  merged=$(jq -cn --argjson existing "$existing" --slurpfile baseline "$source" '
+    def merge($base; $local):
+      if ($base | type) == "object" and ($local | type) == "object" then
+        reduce ((($base | keys_unsorted) + ($local | keys_unsorted)) | unique[]) as $key
+          ({};
+            .[$key] =
+              if ($base | has($key)) and ($local | has($key)) then
+                merge($base[$key]; $local[$key])
+              elif $base | has($key) then
+                $base[$key]
+              else
+                $local[$key]
+              end)
+      elif ($base | type) == "array" and ($local | type) == "array" then
+        reduce ($base + $local)[] as $item
+          ([]; if index($item) == null then . + [$item] else . end)
+      else
+        $base
+      end;
+
+    def managed_hook:
+      ((.command // "") |
+        test("(^|/)(main-branch-guard|daylog-trigger)\\.sh([\\\" ]|$)"));
+
+    def strip_managed_hooks:
+      if type != "object" then {}
+      else
+        with_entries(
+          .value |= [
+            .[] |
+            .hooks = [.hooks[]? | select(managed_hook | not)] |
+            select((.hooks | length) > 0)
+          ]
+        )
+      end;
+
+    ($existing.hooks // {} | strip_managed_hooks) as $local_hooks |
+    ($existing | .hooks = $local_hooks) as $local |
+    merge($baseline[0]; $local)
+  ') || die "could not merge Claude settings"
+
+  existing_sorted=$(printf '%s\n' "$existing" | jq -S .)
+  merged_sorted=$(printf '%s\n' "$merged" | jq -S .)
+  if [ "$existing_sorted" = "$merged_sorted" ]; then
+    printf '  unchanged  %s matches %s\n' "$destination" "$source"
+    UNCHANGED=$((UNCHANGED + 1))
+    return
+  fi
+
+  printf '  merge      %s <- %s\n' "$destination" "$source"
+  CHANGES=$((CHANGES + 1))
+  if [ "$MODE" = apply ]; then
+    ensure_parent "$destination"
+    temp="${destination}.skills.$$"
+    if [ -f "$destination" ]; then
+      cp -p "$destination" "$temp"
+    else
+      (umask 077 && : >"$temp")
+    fi
+    printf '%s\n' "$merged" | jq . >"$temp"
+    mv "$temp" "$destination"
+  fi
+}
+
+wire_json_merge() {
+  local source=$1 destination=$2 strategy=$3
+  case "$strategy" in
+    claude-settings) merge_claude_settings "$source" "$destination" ;;
+    *) die "unknown JSON merge strategy: $strategy" ;;
+  esac
+}
+
 scan_unmanaged() {
   local destination=$1 item target
   [ -d "$destination" ] || return
@@ -141,9 +234,28 @@ validate_manifest() {
     (.links | type == "array") and
     (.projectLinks | type == "array") and
     (.imports | type == "array") and
+    (.jsonMerges | type == "array") and
     (.external | type == "array") and
     (.deferred | type == "array")
   ' "$manifest" >/dev/null || die "invalid manifest: $manifest"
+}
+
+preflight_manifest() {
+  local manifest=$1 source_dir source strategy
+
+  while IFS= read -r source_dir; do
+    [ -d "$ROOT/$source_dir" ] || die "source directory missing: $ROOT/$source_dir"
+  done < <(jq -r '.links[].sourceDir, .projectLinks[].sourceDir' "$manifest")
+
+  while IFS= read -r source; do
+    [ -f "$ROOT/$source" ] || die "import source missing: $ROOT/$source"
+  done < <(jq -r '.imports[].source' "$manifest")
+
+  while IFS=$'\t' read -r source strategy; do
+    [ -f "$ROOT/$source" ] || die "JSON merge source missing: $ROOT/$source"
+    [ "$strategy" = claude-settings ] || die "unknown JSON merge strategy: $strategy"
+    jq -e . "$ROOT/$source" >/dev/null || die "invalid JSON merge source: $ROOT/$source"
+  done < <(jq -r '.jsonMerges[] | [.source, .strategy] | @tsv' "$manifest")
 }
 
 wire_groups() {
@@ -219,7 +331,7 @@ validate_skills() {
 }
 
 wire_manifest() {
-  local manifest=$1 name source destination prefix path owner reason
+  local manifest=$1 name source destination prefix strategy path owner reason
   name=$(jq -r '.harness' "$manifest")
   printf '[%s]\n' "$name"
 
@@ -232,6 +344,13 @@ wire_manifest() {
     [ -f "$source" ] || die "import source missing: $source"
     wire_import "$source" "$destination" "$prefix"
   done < <(jq -r '.imports[] | [.source, .destination, .prefix] | @tsv' "$manifest")
+
+  while IFS=$'\t' read -r source destination strategy; do
+    source="$ROOT/$source"
+    destination=$(expand_home "$destination")
+    [ -f "$source" ] || die "JSON merge source missing: $source"
+    wire_json_merge "$source" "$destination" "$strategy"
+  done < <(jq -r '.jsonMerges[] | [.source, .destination, .strategy] | @tsv' "$manifest")
 
   while IFS=$'\t' read -r path owner reason; do
     path=$(expand_home "$path")
@@ -293,6 +412,7 @@ fi
 
 for manifest in "${MANIFESTS[@]}"; do
   validate_manifest "$manifest"
+  preflight_manifest "$manifest"
 done
 
 [ ${#SKILLS[@]} -eq 0 ] || validate_skills

@@ -40,6 +40,13 @@
       "prefix": "@"
     }
   ],
+  "jsonMerges": [
+    {
+      "source": "harness/claude-code/settings.json",
+      "destination": "~/.claude/settings.json",
+      "strategy": "claude-settings"
+    }
+  ],
   "external": [
     {
       "path": "~/.claude/hooks/herdr-agent-state.sh",
@@ -52,10 +59,5 @@
       "reason": "Machine-local status line; not part of the canonical skill suite."
     }
   ],
-  "deferred": [
-    {
-      "path": "~/.claude/settings.json",
-      "reason": "The sanitized hooks, attribution, model, and auto-mode baseline is the next Phase 0 increment."
-    }
-  ]
+  "deferred": []
 }
