@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "agents": {
+    "ennio": {
+      "description": "Orchestrator. Protects its own context and delegates heavy work to sub-agents: parallel research, worktree isolation, and authoring sweeps. Use for multi-step increments that need fan-out rather than a single-threaded edit; keep only conclusions in the main window."
+    },
+    "bit": {
+      "description": "Implementer. Holds a durable configured tier across the TDD, typecheck, and test loop for multi-turn implement and refactor work. Owns source edits and test cadence; hands finished, green work to @tux to commit. Use for the build phase of an increment, not for git or docs."
+    },
+    "vitruv": {
+      "description": "Definer. Writes the spec and slice briefs a build is judged against. Owns definition artifacts and tracker issues; the build begins only when a human begins it. Use for spec, issues, and ADR work, never for implementation."
+    },
+    "tux": {
+      "description": "Git operator. The only writer of git state: commits, branches, worktrees, and PRs. Use to land finished work, not to write code or docs."
+    },
+    "linn": {
+      "description": "Docs steward. Owns update-docs and vault-hygiene sweeps: docs that match the implementation, and a clean vault with valid metadata, names, HEAD pointers, and harvested lessons. Use after an increment lands to reconcile docs and tidy the notes."
+    },
+    "radar": {
+      "description": "State steward. Reads project HEADs and recent artifacts, returns a cross-project briefing, runs standup and hotwash, maintains the SITREP and daylog, and writes proven progress back under an evidence gate. Use to brief or debrief the day, not to fix docs or write code."
+    }
+  }
+}

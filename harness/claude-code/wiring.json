@@ -8,11 +8,6 @@
       "destination": "~/.claude/skills"
     },
     {
-      "sourceDir": "agents",
-      "match": "*.md",
-      "destination": "~/.claude/agents"
-    },
-    {
       "sourceDir": "commands",
       "match": "*.md",
       "destination": "~/.claude/commands"
@@ -45,6 +40,16 @@
       "source": "harness/claude-code/settings.json",
       "destination": "~/.claude/settings.json",
       "strategy": "claude-settings"
+    }
+  ],
+  "agentRenders": [
+    {
+      "sourceDir": "agents",
+      "catalog": "agents/manifest.json",
+      "metadata": "harness/claude-code/agents.json",
+      "destination": "~/.claude/agents",
+      "format": "claude-code",
+      "target": "claude-code"
     }
   ],
   "external": [

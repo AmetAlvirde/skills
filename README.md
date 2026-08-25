@@ -19,7 +19,9 @@ tiering, and the **router table** live below (read on demand).
   `design`, `update-docs`).
   **Project-scoped**: linked into a repo only when it opts in via `project-setup`.
 - **`agents/`**: personas (`@ennio`, `@bit`, `@vitruv`, `@tux`, `@linn`,
-  `@radar`). Symlinked into `~/.claude/agents/`.
+  `@radar`). Each Markdown file is one portable prompt; `agents/manifest.json`
+  carries shared discovery text. `harness/wire` combines them with native
+  metadata and model targets.
 - **`hooks/`**: harness guardrails, not skills: shell scripts wired into
   `~/.claude/settings.json`'s `hooks` block. `main-branch-guard.sh` is the local
   half of @tux's floor. Symlinked into `~/.claude/hooks/`.
@@ -34,9 +36,10 @@ governs how every skill here is authored. All write markdown artifacts into
 
 ## How they're wired
 
-Skills reach each harness via **direct, gitignored symlinks**: one hop, no
-intermediate staging directory. `harness/wire` reads the manifests under
-`harness/*/wiring.json`; there is no installer per harness.
+Skills reach each harness through direct, gitignored symlinks. Native persona
+files are rendered because neither Claude Code nor OpenCode can import a shared
+agent body. `harness/wire` reads the manifests under `harness/*/wiring.json`;
+there is no installer per harness.
 
 ```
 ~/Dev/skills/global/<skill>/SKILL.md   ← source (this repo)
@@ -47,9 +50,11 @@ intermediate staging directory. `harness/wire` reads the manifests under
   ↑ symlink (per-skill, opt-in per repo)
 <repo>/.claude/skills/<skill>          ← discovered only when that repo is cwd
 
-~/Dev/skills/agents/<agent>.md         ← source (this repo)
-  ↑ symlink
-~/.claude/agents/<agent>.md            ← persona, available everywhere
+~/Dev/skills/agents/<agent>.md         ← portable prompt (this repo)
+agents/manifest.json + harness metadata + harness/models.json
+  ↓ harness/wire render
+~/.claude/agents/<agent>.md            ← Claude-native runtime file
+~/.config/opencode/agents/<agent>.md   ← OpenCode-native runtime file
 
 ~/Dev/skills/commands/<command>.md      ← source (this repo)
   ↑ symlink
@@ -83,17 +88,17 @@ preferences, including Herdr's vendor-managed registration.
 `statusline-command.sh` and Herdr's agent-state files remain external. The
 manifest reports them, and the executor never creates or replaces them.
 
-Preview every Claude-managed global link, the voice import, and the settings
-merge:
+Preview every Claude-managed global link, rendered agent, voice import, and
+settings merge:
 
 ```sh
 ~/Dev/skills/harness/wire --harness claude-code
 ```
 
-Dry-run is the default. Add `--apply` to create or repair managed links and
-merge settings. For link destinations, the executor replaces stale symlinks but
-refuses real files or directories. It also refuses to merge invalid JSON
-settings.
+Dry-run is the default. Add `--apply` to create or repair managed links, render
+agents, and merge settings. The executor replaces stale managed symlinks and
+previously rendered agents, but refuses foreign files or directories. It also
+refuses to merge invalid JSON settings.
 
 To link every engineering skill into a repo:
 
@@ -106,10 +111,8 @@ and the executor reports real or foreign entries in `.claude/skills/` as
 `unmanaged` without deleting them.
 
 To wire a repo to the `engineering/` skills, run `project-setup` from that
-repo's root. It creates per-skill symlinks into `<repo>/.claude/skills/` and
-gitignores them. A later harness phase will make `project-setup` select manifests
-and call `harness/wire`; this increment adds the executor without changing that
-skill's behavior.
+repo's root. It calls `harness/wire`, creates per-skill symlinks under
+`<repo>/.claude/skills/`, and gitignores them.
 
 ### OpenCode GPT smoke
 
@@ -117,6 +120,7 @@ Pi is deferred. The current MVP path is OpenCode `1.18.22` on
 `openai/gpt-5.6-sol`:
 
 ```sh
+~/Dev/skills/harness/wire --harness opencode --apply
 ~/Dev/skills/harness/opencode/openai
 ```
 
@@ -134,16 +138,15 @@ For a non-interactive check:
 
 The base loads `global/unslop/VOICE.md`, discovers canonical global skills,
 allows vault access under `~/Dev/notes`, and denies dialogue-bound skills to the
-native skill tool. The initial test uses OpenCode's built-in `build`, `plan`,
-`general`, and `explore` agents at mapped GPT variants. Canonical personas are
-not installed yet: `{file:...}` leaks their Claude frontmatter, and a
-command-bound primary agent does not persist onto the next live TUI turn.
-Claude agent bodies do not expand file imports either, so the persona refactor
-will render native runtime agents from one portable prompt plus harness
-metadata.
+native skill tool. The profile keeps OpenCode's built-in `build`, `plan`,
+`general`, and `explore` agents and adds the six canonical personas at mapped
+GPT variants. Start directly in one with `openai --agent ennio`, or switch with
+the native TUI agent selector. A command-bound primary agent still lasts only
+for its command turn.
 
 Editing a `SKILL.md` here updates the skill everywhere immediately, with no
-copy step.
+copy step. Editing a persona prompt or its metadata requires rerunning the
+matching harness manifest.
 
 ## Invocation taxonomy
 
@@ -194,9 +197,10 @@ Multi-turn/agentic work tiers via the **agent**, which holds the tier across the
 loop. The semantic assignments and each harness/provider target live in
 [`harness/models.json`](./harness/models.json). Claude's ceiling is Opus 5
 xhigh (Fable high while the subscription allows). Claude frontmatter pins exact
-model ids: `claude-opus-5`, `claude-sonnet-5`. Never a bare alias like `sonnet`,
-and never append a date suffix. The Claude session default in the settings
-baseline resolves through the same model map.
+model ids: canonical skill frontmatter carries skill pins, and rendered agent
+frontmatter carries persona pins. Never use a bare alias like `sonnet`, and
+never append a date suffix. The Claude session default in the settings baseline
+resolves through the same model map.
 
 A pin's **lifetime** is the deciding factor, not the skill's size: a skill
 override resets at the next user prompt, so any loop that iterates with the
@@ -222,24 +226,22 @@ and `issues` as **@vitruv**, `update-docs` as **@linn**; the `review`,
 `design`, and `unslop` disciplines inherit the tier of the skill that composes
 them.
 
-Every agent **signs its tier**: each run closes with `— ran: <model-id> ·
-effort: <tier>`, plus any bump above its default and why. The model id is
-fact (the agent knows it); the effort is the agent's declared tier, not a
-harness-verified readout, so the sign line surfaces an inherited-effort
-mismatch (a sub-agent running above its pinned tier) instead of hiding it. An
-agent that needs more than its ceiling flags it for a higher-tier re-spawn
-rather than silently exceeding it.
+Every agent signs its tier. Claude Code uses `— ran: <model-id> · effort:
+<tier>`; OpenCode uses `variant` in place of `effort`. The agent reports the
+runtime value when the harness exposes it and labels a configured value rather
+than presenting it as observed fact. Any escalation includes its reason.
 
 ## Commands
 
 `commands/` holds one boot command per agent: a prompt template that makes the
 main session **embody** that agent (you ARE it; not spawned as a sub-agent). Each
-file symlinks to `~/.claude/commands/<name>.md` (wired once, like `agents/`), so
+file symlinks to `~/.claude/commands/<name>.md`, so
 `/enn`, `/bit`, `/vitruv`, `/tux`, `/linn`, `/radar` resolve in any repo. `/enn`
 boots the orchestrator / command-post companion. **Bare** `/enn` orients across
 hq then stands by; `/enn <task>` orients only at what the task names and explores
 lazily, never reading hq to re-derive a scope it was handed. The other five boot
-a focused single-worker session. `project-setup` links them alongside the agents.
+a focused single-worker session. `project-setup` links the commands and renders
+the agents through the manifest executor.
 
 ## Router
 

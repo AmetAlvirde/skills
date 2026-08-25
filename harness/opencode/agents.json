@@ -1,0 +1,238 @@
+{
+  "version": 1,
+  "harness": "opencode",
+  "agents": {
+    "ennio": {
+      "mode": "all",
+      "color": "#a855f7",
+      "permission": {
+        "edit": "allow",
+        "bash": {
+          "*": "allow",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git cherry-pick*": "deny",
+          "git tag*": "deny",
+          "gh pr create*": "deny",
+          "gh pr merge*": "deny"
+        },
+        "task": {
+          "*": "deny",
+          "bit": "allow",
+          "vitruv": "allow",
+          "tux": "allow",
+          "linn": "allow",
+          "radar": "allow",
+          "explore": "allow",
+          "general": "allow"
+        },
+        "external_directory": {
+          "*": "ask",
+          "~/Dev/notes/**": "allow",
+          "~/.ssh/**": "deny",
+          "~/.aws/**": "deny"
+        },
+        "skill": {
+          "*": "allow",
+          "standup": "deny",
+          "hotwash": "deny",
+          "codebase-map": "deny",
+          "codebase-grill": "deny"
+        },
+        "question": "allow",
+        "todowrite": "allow",
+        "webfetch": "allow",
+        "websearch": "allow"
+      }
+    },
+    "bit": {
+      "mode": "all",
+      "color": "#22c55e",
+      "permission": {
+        "edit": {
+          "*": "allow",
+          "**/*.md": "deny",
+          "~/Dev/notes/**": "allow"
+        },
+        "bash": {
+          "*": "allow",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "git branch*": "deny",
+          "git switch*": "deny",
+          "git checkout*": "deny",
+          "git worktree*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git cherry-pick*": "deny",
+          "git tag*": "deny",
+          "gh pr create*": "deny",
+          "gh pr merge*": "deny"
+        },
+        "task": {
+          "*": "deny",
+          "tux": "allow"
+        },
+        "external_directory": {
+          "*": "ask",
+          "~/Dev/notes/**": "allow",
+          "~/.ssh/**": "deny",
+          "~/.aws/**": "deny"
+        },
+        "skill": {
+          "*": "allow",
+          "standup": "deny",
+          "hotwash": "deny",
+          "codebase-map": "deny",
+          "codebase-grill": "deny"
+        },
+        "question": "allow",
+        "todowrite": "allow"
+      }
+    },
+    "vitruv": {
+      "mode": "all",
+      "color": "#f97316",
+      "permission": {
+        "edit": {
+          "*": "deny",
+          "**/*.md": "allow",
+          "~/Dev/notes/**": "allow"
+        },
+        "bash": {
+          "*": "deny",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "gh issue list*": "allow",
+          "gh issue view*": "allow",
+          "gh issue create*": "ask",
+          "gh api*": "ask"
+        },
+        "task": {
+          "*": "deny",
+          "tux": "allow"
+        },
+        "external_directory": {
+          "*": "ask",
+          "~/Dev/notes/**": "allow",
+          "~/.ssh/**": "deny",
+          "~/.aws/**": "deny"
+        },
+        "skill": {
+          "*": "allow",
+          "implement": "deny",
+          "prototype": "deny",
+          "standup": "deny",
+          "hotwash": "deny",
+          "codebase-map": "deny",
+          "codebase-grill": "deny"
+        },
+        "question": "allow",
+        "todowrite": "allow"
+      }
+    },
+    "tux": {
+      "mode": "all",
+      "color": "#eab308",
+      "permission": {
+        "edit": {
+          "*": "deny",
+          "~/Dev/notes/**": "allow"
+        },
+        "bash": {
+          "*": "deny",
+          "pwd": "allow",
+          "ls *": "allow",
+          "command -v *": "allow",
+          "git *": "allow",
+          "gh *": "allow",
+          "git push*": "ask",
+          "gh pr create*": "ask",
+          "gh pr merge*": "ask"
+        },
+        "task": "deny",
+        "external_directory": {
+          "*": "ask",
+          "~/Dev/notes/**": "allow",
+          "~/.ssh/**": "deny",
+          "~/.aws/**": "deny"
+        },
+        "skill": {
+          "*": "deny",
+          "branch-prune": "allow",
+          "handoff": "allow"
+        },
+        "question": "allow"
+      }
+    },
+    "linn": {
+      "mode": "all",
+      "color": "#06b6d4",
+      "permission": {
+        "edit": {
+          "*": "deny",
+          "**/*.md": "allow",
+          "~/Dev/notes/**": "allow"
+        },
+        "bash": {
+          "*": "deny",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow"
+        },
+        "task": "deny",
+        "external_directory": {
+          "*": "ask",
+          "~/Dev/notes/**": "allow",
+          "~/.ssh/**": "deny",
+          "~/.aws/**": "deny"
+        },
+        "skill": {
+          "*": "allow",
+          "standup": "deny",
+          "hotwash": "deny",
+          "codebase-map": "deny",
+          "codebase-grill": "deny"
+        },
+        "question": "allow",
+        "todowrite": "allow"
+      }
+    },
+    "radar": {
+      "mode": "all",
+      "color": "#3b82f6",
+      "permission": {
+        "edit": {
+          "*": "deny",
+          "~/Dev/notes/**": "allow"
+        },
+        "bash": {
+          "*": "deny",
+          "git status*": "allow",
+          "git log*": "allow",
+          "git diff*": "allow",
+          "gh search issues*": "allow",
+          "gh search prs*": "allow"
+        },
+        "task": "deny",
+        "external_directory": {
+          "*": "ask",
+          "~/Dev/notes/**": "allow",
+          "~/.ssh/**": "deny",
+          "~/.aws/**": "deny"
+        },
+        "skill": {
+          "*": "allow",
+          "standup": "deny",
+          "hotwash": "deny",
+          "codebase-map": "deny",
+          "codebase-grill": "deny"
+        },
+        "question": "allow",
+        "todowrite": "allow"
+      }
+    }
+  }
+}

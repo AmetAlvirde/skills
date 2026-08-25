@@ -71,8 +71,9 @@ unsupported in the table above.
 
 ## Claude-native metadata
 
-Claude Code reads these fields from canonical Markdown frontmatter. They remain
-in place while Claude Code is an active harness:
+Claude Code reads these fields from canonical skill frontmatter, command
+frontmatter, or rendered agent frontmatter. They remain in those native
+projections while Claude Code is an active harness:
 
 | Field | Contract meaning |
 | --- | --- |
@@ -129,11 +130,12 @@ agent body unexpanded. A control agent received the same instruction when it
 was inline, which rules out agent discovery or invocation as the cause. Claude
 agent definitions cannot import a shared prompt body.
 
-The persona refactor will extract one portable prompt per persona and keep
-harness metadata separate. `harness/wire` must render each native runtime agent
-from that prompt and its harness metadata. Rendered files are installed output,
-not editable sources. Until that refactor lands, canonical `agents/*.md` files
-stay intact.
+Each `agents/*.md` file is one portable persona prompt. Shared descriptions live
+in `agents/manifest.json`; native fields and permission boundaries live under
+the matching harness. `harness/wire` resolves the model target through
+`models.json` and renders each runtime agent. It replaces only an old managed
+symlink or a file carrying its generated marker. Rendered files are installed
+output, not editable sources.
 
 An OpenCode command binder may select a native primary agent and pass
 `$ARGUMENTS`, but the selection applies only to that command turn. The live
@@ -209,8 +211,8 @@ parity.
 ## Wiring and external state
 
 `harness/wire` reads `harness/*/wiring.json`. Manifests declare links, imports,
-JSON merges, project-scoped links, external integrations, and deferred config.
-Harness-specific installers are not allowed.
+JSON merges, native agent renders, project-scoped links, external integrations,
+and deferred config. Harness-specific installers are not allowed.
 
 `harness/claude-code/settings.json` owns the portable Claude settings baseline:
 the suite's hook registrations, attribution policy, model defaults, and generic
