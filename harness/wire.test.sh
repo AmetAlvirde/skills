@@ -96,6 +96,20 @@ ok 'OpenCode wiring allowlists only managed plugins' jq -e '
   [.links[] | select(.sourceDir == "harness/opencode/plugins") | .match] | sort ==
     ["daylog-trigger.ts", "main-branch-guard.ts"]
 ' "$ROOT/harness/opencode/wiring.json"
+ok 'OpenCode project skill destination does not drift' jq -e '
+  .projectLinks == [{
+    sourceDir: "engineering",
+    match: "*",
+    destination: ".opencode/skills",
+    selectable: true,
+    scanUnmanaged: true
+  }]
+' "$ROOT/harness/opencode/wiring.json"
+ok 'project skill dry-run reports canonical link' grep -Fq \
+  "link       $DRY_PROJECT/.opencode/skills/design -> $ROOT/engineering/design" \
+  "$W/opencode-dry.out"
+ok 'project skill dry-run creates no skill directory' test \
+  ! -e "$DRY_PROJECT/.opencode/skills"
 
 echo 'clean render'
 HOME="$HOME_DIR" "$WIRE" --harness claude-code --apply >"$W/claude-first.out"
@@ -157,10 +171,21 @@ done
 
 PROJECT="$W/project"
 mkdir -p "$PROJECT"
+git init -q "$PROJECT"
 HOME="$HOME_DIR" "$WIRE" --harness opencode --project "$PROJECT" --apply >"$W/opencode-project.out"
 for name in codebase-map codebase-grill; do
   ok "project command renders $name" test -f "$PROJECT/.opencode/commands/$name.md"
 done
+ok 'OpenCode project skill applies' test -L "$PROJECT/.opencode/skills/design"
+ok 'OpenCode project skill uses one-hop canonical target' test \
+  "$(readlink "$PROJECT/.opencode/skills/design")" = "$ROOT/engineering/design"
+
+HOME="$HOME_DIR" "$WIRE" --harness claude-code --project "$PROJECT" --apply \
+  >"$W/claude-project.out"
+ok 'Claude project link coexists with OpenCode' test -L \
+  "$PROJECT/.claude/skills/design"
+ok 'OpenCode project link remains beside Claude' test -L \
+  "$PROJECT/.opencode/skills/design"
 
 FILTERED_PROJECT="$W/filtered-project"
 mkdir -p "$FILTERED_PROJECT"
@@ -168,6 +193,74 @@ HOME="$HOME_DIR" "$WIRE" --harness opencode --project "$FILTERED_PROJECT" \
   --skill codebase-map --apply >"$W/opencode-filtered.out"
 ok 'selected project command renders' test -f "$FILTERED_PROJECT/.opencode/commands/codebase-map.md"
 ok 'unselected project command stays absent' test ! -e "$FILTERED_PROJECT/.opencode/commands/codebase-grill.md"
+ok 'selected project skill links' test -L "$FILTERED_PROJECT/.opencode/skills/codebase-map"
+ok 'unselected project skill stays absent' test \
+  ! -e "$FILTERED_PROJECT/.opencode/skills/codebase-grill"
+ok 'unrelated project skill stays absent' test \
+  ! -e "$FILTERED_PROJECT/.opencode/skills/design"
+
+HOME="$HOME_DIR" "$WIRE" --harness opencode --project "$PROJECT" --apply \
+  >"$W/opencode-project-second.out"
+ok 'OpenCode project links are idempotent' grep -Fq 'summary: 0 change(s)' \
+  "$W/opencode-project-second.out"
+ok 'OpenCode project skill reports unchanged' grep -Fq \
+  "/.opencode/skills/design -> $ROOT/engineering/design" \
+  "$W/opencode-project-second.out"
+
+UNMANAGED_PROJECT="$W/unmanaged-project"
+mkdir -p "$UNMANAGED_PROJECT/.opencode/skills"
+printf '%s\n' 'leave me alone' >"$UNMANAGED_PROJECT/.opencode/skills/local-skill"
+if HOME="$HOME_DIR" "$WIRE" --harness opencode --project "$UNMANAGED_PROJECT" --apply \
+  >"$W/unmanaged-project.out" 2>&1; then
+  unmanaged_project_status=0
+else
+  unmanaged_project_status=$?
+fi
+ok 'OpenCode unmanaged project entry returns warning status' test \
+  "$unmanaged_project_status" -ne 0
+ok 'OpenCode scans and reports unmanaged project entries' grep -Fq \
+  "$UNMANAGED_PROJECT/.opencode/skills/local-skill -> review/remove" \
+  "$W/unmanaged-project.out"
+ok 'OpenCode leaves unmanaged project entries unchanged' grep -Fqx \
+  'leave me alone' "$UNMANAGED_PROJECT/.opencode/skills/local-skill"
+
+FOREIGN_SKILL_FILE_PROJECT="$W/foreign-skill-file-project"
+mkdir -p "$FOREIGN_SKILL_FILE_PROJECT/.opencode/skills"
+printf '%s\n' 'foreign design skill' \
+  >"$FOREIGN_SKILL_FILE_PROJECT/.opencode/skills/design"
+if HOME="$HOME_DIR" "$WIRE" --harness opencode \
+  --project "$FOREIGN_SKILL_FILE_PROJECT" --skill design --apply \
+  >"$W/foreign-skill-file.out" 2>&1; then
+  foreign_skill_file_status=0
+else
+  foreign_skill_file_status=$?
+fi
+ok 'foreign OpenCode project skill file returns warning status' test \
+  "$foreign_skill_file_status" -ne 0
+ok 'foreign OpenCode project skill file is refused' grep -Fq \
+  "$FOREIGN_SKILL_FILE_PROJECT/.opencode/skills/design (refusing to replace)" \
+  "$W/foreign-skill-file.out"
+ok 'foreign OpenCode project skill file is not replaced' grep -Fqx \
+  'foreign design skill' "$FOREIGN_SKILL_FILE_PROJECT/.opencode/skills/design"
+
+FOREIGN_SKILL_LINK_PROJECT="$W/foreign-skill-link-project"
+mkdir -p "$FOREIGN_SKILL_LINK_PROJECT/.opencode/skills"
+ln -s "$W/foreign-design" "$FOREIGN_SKILL_LINK_PROJECT/.opencode/skills/design"
+if HOME="$HOME_DIR" "$WIRE" --harness opencode \
+  --project "$FOREIGN_SKILL_LINK_PROJECT" --skill design --apply \
+  >"$W/foreign-skill-link.out" 2>&1; then
+  foreign_skill_link_status=0
+else
+  foreign_skill_link_status=$?
+fi
+ok 'foreign OpenCode project skill symlink returns warning status' test \
+  "$foreign_skill_link_status" -ne 0
+ok 'foreign OpenCode project skill symlink is refused' grep -Fq \
+  "design -> $W/foreign-design (refusing to replace)" \
+  "$W/foreign-skill-link.out"
+ok 'foreign OpenCode project skill symlink is not replaced' test \
+  "$(readlink "$FOREIGN_SKILL_LINK_PROJECT/.opencode/skills/design")" = \
+  "$W/foreign-design"
 
 if [ -f "$COMMAND_CATALOG" ]; then
   for name in standup hotwash codebase-map codebase-grill; do
@@ -269,6 +362,22 @@ if command -v opencode >/dev/null 2>&1; then
     ((.plugin // []) | any(contains("main-branch-guard.ts"))) and
     ((.plugin // []) | any(contains("daylog-trigger.ts")))
   ' "$W/opencode-config.json"
+
+  DISCOVERY_HOME="$W/discovery-home"
+  DISCOVERY_PROJECT="$W/discovery-project"
+  mkdir -p "$DISCOVERY_HOME" "$DISCOVERY_PROJECT"
+  git init -q "$DISCOVERY_PROJECT"
+  HOME="$DISCOVERY_HOME" "$WIRE" --harness opencode \
+    --project "$DISCOVERY_PROJECT" --skill design --apply \
+    >"$W/opencode-discovery-wire.out"
+  (cd "$DISCOVERY_PROJECT" && HOME="$DISCOVERY_HOME" \
+    OPENCODE_DISABLE_EXTERNAL_SKILLS=1 OPENCODE_DISABLE_CLAUDE_CODE_SKILLS=1 \
+    opencode debug skill --pure) >"$W/opencode-skills.json"
+  ok 'isolated OpenCode discovers selected project skill' jq -e \
+    'any(.name == "design" and (.location | contains("/.opencode/skills/design/SKILL.md")))' \
+    "$W/opencode-skills.json"
+  ok 'isolated OpenCode omits unselected project skill' jq -e \
+    'all(.name != "audit")' "$W/opencode-skills.json"
 fi
 
 cp "$HOME_DIR/.config/opencode/commands/standup.md" "$W/standup-canonical.md"

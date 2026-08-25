@@ -50,6 +50,7 @@ is no installer per harness.
 ~/Dev/skills/engineering/<skill>       ← source (this repo)
   ↑ symlink (per-skill, opt-in per repo)
 <repo>/.claude/skills/<skill>          ← discovered only when that repo is cwd
+<repo>/.opencode/skills/<skill>         ← same selection for OpenCode
 
 ~/Dev/skills/agents/<agent>.md         ← portable prompt (this repo)
 agents/manifest.json + harness metadata + harness/models.json
@@ -121,19 +122,23 @@ agents and commands, and merge settings. The executor replaces stale managed
 symlinks and generated files, but refuses foreign files or directories. It also
 refuses to merge invalid JSON settings.
 
-To link every engineering skill into a repo:
+To link every engineering skill into a repo for one harness:
 
 ```sh
 ~/Dev/skills/harness/wire --harness claude-code --project /path/to/repo --apply
 ```
 
 Repeat `--skill <name>` to select a subset. Project links remain one per skill,
-and the executor reports real or foreign entries in `.claude/skills/` as
-`unmanaged` without deleting them.
+and the executor reports real or foreign entries in the harness's project skill
+directory as `unmanaged` without deleting them. OpenCode uses the same command
+with `--harness opencode` and installs links under `.opencode/skills/`.
 
 To wire a repo to the `engineering/` skills, run `project-setup` from that
-repo's root. It calls `harness/wire`, creates per-skill symlinks under
-`<repo>/.claude/skills/`, and gitignores them.
+repo's root. It selects Claude Code, OpenCode, or both, defaulting to both, and
+calls `harness/wire` once per selected harness with the same skill selectors.
+It gitignores only the selected `.claude/skills/` and/or `.opencode/skills/`
+directories. Restart OpenCode after project wiring so it discovers the new
+project skills.
 
 ### OpenCode GPT smoke
 
@@ -147,14 +152,16 @@ Pi is deferred. The current MVP path is OpenCode `1.18.22` on
 
 That global apply links the native branch guard and reduced daylog plugins, and
 renders the global `/standup` and `/hotwash` commands. Render the two engineering
-commands into a participating repository with:
+commands and link the selected engineering skills into a participating
+repository with:
 
 ```sh
 ~/Dev/skills/harness/wire --harness opencode --project /path/to/repo --apply
 ```
 
 Repeat `--skill codebase-map` or `--skill codebase-grill` to narrow the
-project command set. A global apply never installs either engineering command.
+project command set; any engineering skill name may select its project skill
+link. A global apply never installs project skills or engineering commands.
 
 The launcher checks the CLI version, loads the provider-independent base, then
 applies `profiles/openai.jsonc` for that process. It does not replace the global
@@ -350,10 +357,10 @@ human-only because each advances by asking the human questions; see §Invocation
 taxonomy.
 
 Reach is scoped **per repo**, not by this flag: `engineering/` skills exist only
-where `project-setup` symlinked them (`<repo>/.claude/skills/`), and that skill
-asks which subset to link. A repo with no engineering skills linked, say a
-writing vault, never sees `codebase-map` in context whether it is guarded or
-not.
+where `project-setup` symlinked them (`<repo>/.claude/skills/` and/or
+`<repo>/.opencode/skills/`), and that skill asks which subset to link. A repo
+with no engineering skills linked, say a writing vault, never sees
+`codebase-map` in context whether it is guarded or not.
 
 ## Vault
 

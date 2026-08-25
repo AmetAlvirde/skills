@@ -13,7 +13,15 @@
       "destination": "~/.config/opencode/plugins"
     }
   ],
-  "projectLinks": [],
+  "projectLinks": [
+    {
+      "sourceDir": "engineering",
+      "match": "*",
+      "destination": ".opencode/skills",
+      "selectable": true,
+      "scanUnmanaged": true
+    }
+  ],
   "imports": [],
   "jsonMerges": [],
   "agentRenders": [

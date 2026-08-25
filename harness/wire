@@ -475,7 +475,7 @@ render_commands() {
 
 scan_unmanaged() {
   local destination=$1 item target
-  [ -d "$destination" ] || return
+  [ -d "$destination" ] || return 0
 
   shopt -s nullglob
   for item in "$destination"/*; do

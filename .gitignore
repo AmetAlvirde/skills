@@ -6,3 +6,4 @@ node_modules/
 # engineering/ skills. The source of truth is this repo; the symlinks are not
 # committed anywhere. Ignored here in case this repo dogfoods its own skills.
 .claude/skills/
+.opencode/skills/

@@ -268,6 +268,14 @@ reach. Command renders support dry-run, carry a managed marker, replace only
 managed output, refuse foreign files and symlinks, and report unchanged output
 as idempotent.
 
+Both active harness manifests expose canonical `engineering/` skills through
+selectable project links. Claude Code links them under
+`<repo>/.claude/skills/`; OpenCode links them under
+`<repo>/.opencode/skills/`. Every link targets `engineering/<skill>` directly.
+The same `--skill` selectors can be repeated for each harness. Dry-run,
+idempotence, unmanaged scanning, and foreign-path refusal are shared executor
+behavior.
+
 The OpenCode manifest links only `harness/opencode/plugins/main-branch-guard.ts`
 and `harness/opencode/plugins/daylog-trigger.ts` into the global plugin
 directory. Each one-hop link follows the same dry-run and idempotence rules as
