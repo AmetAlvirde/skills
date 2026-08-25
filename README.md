@@ -23,6 +23,9 @@ tiering, and the **router table** live below (read on demand).
 - **`hooks/`**: harness guardrails, not skills: shell scripts wired into
   `~/.claude/settings.json`'s `hooks` block. `main-branch-guard.sh` is the local
   half of @tux's floor. Symlinked into `~/.claude/hooks/`.
+- **`harness/`**: the capability contract, model map, native configuration,
+  protocol adapters, wiring manifests, and the one manifest executor. It owns
+  harness mechanics, never copies of canonical behavior.
 
 `map` and `grill` are complements, the general front doors to the `diverge` and
 `converge` disciplines, which own the method and the artifact. `skill-setup`
@@ -31,8 +34,9 @@ governs how every skill here is authored. All write markdown artifacts into
 
 ## How they're wired
 
-Skills reach the tool via **direct, gitignored symlinks**: one hop, no
-intermediate `~/.agents/skills` staging directory.
+Skills reach each harness via **direct, gitignored symlinks**: one hop, no
+intermediate staging directory. `harness/wire` reads the manifests under
+`harness/*/wiring.json`; there is no installer per harness.
 
 ```
 ~/Dev/skills/global/<skill>/SKILL.md   ← source (this repo)
@@ -46,6 +50,10 @@ intermediate `~/.agents/skills` staging directory.
 ~/Dev/skills/agents/<agent>.md         ← source (this repo)
   ↑ symlink
 ~/.claude/agents/<agent>.md            ← persona, available everywhere
+
+~/Dev/skills/commands/<command>.md      ← source (this repo)
+  ↑ symlink
+~/.claude/commands/<command>.md         ← boot command, available everywhere
 
 ~/Dev/skills/hooks/<hook>.sh           ← source (this repo)
   ↑ symlink, plus an entry in ~/.claude/settings.json
@@ -66,28 +74,36 @@ keeps it off orchestration turns entirely.
 
 A hook needs the settings entry as well as the link. The symlink alone does
 nothing. `main-branch-guard.sh` is registered as a `PreToolUse` hook on `Bash`.
+The sanitized Claude settings baseline has not landed yet, so the current
+manifest reports that config as deferred rather than claiming to reproduce it.
+It also reports `statusline-command.sh` and Herdr's agent-state hook as external;
+the executor never edits either one.
 
-`project-setup` creates and maintains these links. To (re)link the globals
-and agents by hand (idempotent):
+Preview every Claude-managed global link and the voice import:
 
 ```sh
-for s in "$HOME"/Dev/skills/global/*/; do
-  ln -sfn "$s" "$HOME/.claude/skills/$(basename "$s")"
-done
-for a in "$HOME"/Dev/skills/agents/*.md; do
-  ln -sfn "$a" "$HOME/.claude/agents/$(basename "$a")"
-done
-mkdir -p "$HOME/.claude/hooks"
-for h in "$HOME"/Dev/skills/hooks/*.sh; do
-  ln -sfn "$h" "$HOME/.claude/hooks/$(basename "$h")"
-done
-grep -q 'unslop/VOICE.md' "$HOME/.claude/CLAUDE.md" 2>/dev/null ||
-  echo '@~/Dev/skills/global/unslop/VOICE.md' >> "$HOME/.claude/CLAUDE.md"
+~/Dev/skills/harness/wire --harness claude-code
 ```
+
+Dry-run is the default. Add `--apply` to create or repair managed links. The
+executor replaces stale symlinks but refuses to replace real files or
+directories.
+
+To link every engineering skill into a repo:
+
+```sh
+~/Dev/skills/harness/wire --harness claude-code --project /path/to/repo --apply
+```
+
+Repeat `--skill <name>` to select a subset. Project links remain one per skill,
+and the executor reports real or foreign entries in `.claude/skills/` as
+`unmanaged` without deleting them.
 
 To wire a repo to the `engineering/` skills, run `project-setup` from that
 repo's root. It creates per-skill symlinks into `<repo>/.claude/skills/` and
-gitignores them.
+gitignores them. A later harness phase will make `project-setup` select manifests
+and call `harness/wire`; this increment adds the executor without changing that
+skill's behavior.
 
 Editing a `SKILL.md` here updates the skill everywhere immediately, with no
 copy step.
@@ -135,12 +151,14 @@ specializes it (`grill` → `codebase-grill`; `review` → `codebase-review`,
 
 ## Tiering
 
-Single-turn disciplines pin `model`/`effort` in **skill** frontmatter (resets
-next turn, which is correct for one-shot methods). Multi-turn/agentic work
-tiers via the **agent**, which holds the tier across the loop. Ceiling: Opus 5
-xhigh (Fable high while the subscription allows). **Pin exact model ids**:
-`claude-opus-5`, `claude-sonnet-5`. Never a bare alias like `sonnet`, and never
-append a date suffix.
+Single-turn disciplines pin `model`/`effort` in Claude-native **skill**
+frontmatter (resets next turn, which is correct for one-shot methods).
+Multi-turn/agentic work tiers via the **agent**, which holds the tier across the
+loop. The semantic assignments and each harness/provider target live in
+[`harness/models.json`](./harness/models.json). Claude's ceiling is Opus 5
+xhigh (Fable high while the subscription allows). Claude frontmatter pins exact
+model ids: `claude-opus-5`, `claude-sonnet-5`. Never a bare alias like `sonnet`,
+and never append a date suffix.
 
 A pin's **lifetime** is the deciding factor, not the skill's size: a skill
 override resets at the next user prompt, so any loop that iterates with the

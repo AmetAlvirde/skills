@@ -1,0 +1,307 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+MODE=dry-run
+HARNESS=""
+PROJECT=""
+SKILLS=()
+CHANGES=0
+UNCHANGED=0
+WARNINGS=0
+
+usage() {
+  cat <<'USAGE'
+Usage: harness/wire [--dry-run | --apply] [--harness NAME]
+                    [--project PATH] [--skill NAME ...]
+
+Reads harness/*/wiring.json. Dry-run is the default. Pass --apply to create or
+repair managed links and imports. Supplying --project links every project skill
+unless one or more --skill selectors narrow the set.
+USAGE
+}
+
+die() {
+  printf 'wire: %s\n' "$1" >&2
+  exit 1
+}
+
+expand_home() {
+  case "$1" in
+    "~") printf '%s\n' "$HOME" ;;
+    \~/*) printf '%s/%s\n' "$HOME" "${1#\~/}" ;;
+    *) printf '%s\n' "$1" ;;
+  esac
+}
+
+selected_skill() {
+  local name=$1 requested
+  [ ${#SKILLS[@]} -eq 0 ] && return 0
+  for requested in "${SKILLS[@]}"; do
+    [ "$requested" = "$name" ] && return 0
+  done
+  return 1
+}
+
+ensure_parent() {
+  local path=$1 parent
+  parent=$(dirname "$path")
+  [ -d "$parent" ] || mkdir -p "$parent"
+}
+
+wire_link() {
+  local source=$1 destination=$2 current
+
+  if [ -L "$destination" ]; then
+    current=$(readlink "$destination")
+    if [ "$current" = "$source" ]; then
+      printf '  unchanged  %s -> %s\n' "$destination" "$source"
+      UNCHANGED=$((UNCHANGED + 1))
+      return
+    fi
+    printf '  relink     %s -> %s (was %s)\n' "$destination" "$source" "$current"
+    CHANGES=$((CHANGES + 1))
+    [ "$MODE" = apply ] && ln -sfn "$source" "$destination"
+    return
+  fi
+
+  if [ -e "$destination" ]; then
+    printf '  unmanaged  %s (refusing to replace)\n' "$destination"
+    WARNINGS=$((WARNINGS + 1))
+    return
+  fi
+
+  printf '  link       %s -> %s\n' "$destination" "$source"
+  CHANGES=$((CHANGES + 1))
+  if [ "$MODE" = apply ]; then
+    ensure_parent "$destination"
+    ln -s "$source" "$destination"
+  fi
+}
+
+wire_import() {
+  local source=$1 destination=$2 prefix=$3 display_source line
+  display_source=$source
+  case "$source" in
+    # Preserve the portable home-relative import syntax used by Claude Code.
+    "$HOME"/*) printf -v display_source '\176/%s' "${source#"$HOME"/}" ;;
+  esac
+  line="${prefix}${display_source}"
+
+  if [ -f "$destination" ] && grep -Fqx "$line" "$destination"; then
+    printf '  unchanged  %s contains %s\n' "$destination" "$line"
+    UNCHANGED=$((UNCHANGED + 1))
+    return
+  fi
+
+  if [ -e "$destination" ] && [ ! -f "$destination" ]; then
+    printf '  unmanaged  %s (import target is not a file)\n' "$destination"
+    WARNINGS=$((WARNINGS + 1))
+    return
+  fi
+
+  printf '  import     %s into %s\n' "$line" "$destination"
+  CHANGES=$((CHANGES + 1))
+  if [ "$MODE" = apply ]; then
+    ensure_parent "$destination"
+    [ ! -s "$destination" ] || [ "$(tail -c 1 "$destination" 2>/dev/null || true)" = "" ] || printf '\n' >>"$destination"
+    printf '%s\n' "$line" >>"$destination"
+  fi
+}
+
+scan_unmanaged() {
+  local destination=$1 item target
+  [ -d "$destination" ] || return
+
+  shopt -s nullglob
+  for item in "$destination"/*; do
+    if [ ! -L "$item" ]; then
+      printf '  unmanaged  %s -> review/remove\n' "$item"
+      WARNINGS=$((WARNINGS + 1))
+      continue
+    fi
+    target=$(readlink "$item")
+    case "$target" in
+      "$ROOT"/*) ;;
+      *)
+        printf '  unmanaged  %s -> %s -> review/remove\n' "$item" "$target"
+        WARNINGS=$((WARNINGS + 1))
+        ;;
+    esac
+  done
+  shopt -u nullglob
+}
+
+validate_manifest() {
+  local manifest=$1
+  jq -e '
+    .version == 1 and
+    (.harness | type == "string") and
+    (.links | type == "array") and
+    (.projectLinks | type == "array") and
+    (.imports | type == "array") and
+    (.external | type == "array") and
+    (.deferred | type == "array")
+  ' "$manifest" >/dev/null || die "invalid manifest: $manifest"
+}
+
+wire_groups() {
+  local manifest=$1 key=$2 project_scope=$3 group source_dir match exclude destination
+  local source name found
+
+  while IFS= read -r group; do
+    source_dir=$(jq -r '.sourceDir' <<<"$group")
+    match=$(jq -r '.match' <<<"$group")
+    exclude=$(jq -r '.exclude // ""' <<<"$group")
+    destination=$(jq -r '.destination' <<<"$group")
+
+    if [ "$project_scope" = yes ]; then
+      if [ -z "$PROJECT" ]; then
+        printf '  deferred   project links (pass --project PATH)\n'
+        continue
+      fi
+      destination="$PROJECT/$destination"
+    else
+      destination=$(expand_home "$destination")
+    fi
+
+    [ -d "$ROOT/$source_dir" ] || die "source directory missing: $ROOT/$source_dir"
+    found=0
+    shopt -s nullglob
+    for source in "$ROOT/$source_dir"/$match; do
+      name=$(basename "$source")
+      # The manifest's exclude value is a glob, not a literal name.
+      # shellcheck disable=SC2053
+      if [ -n "$exclude" ] && [[ "$name" == $exclude ]]; then
+        continue
+      fi
+      if [ "$project_scope" = yes ] && ! selected_skill "$name"; then
+        continue
+      fi
+      found=$((found + 1))
+      wire_link "$source" "$destination/$name"
+    done
+    shopt -u nullglob
+
+    [ "$found" -gt 0 ] || {
+      if [ "$project_scope" = yes ] && [ ${#SKILLS[@]} -gt 0 ]; then
+        continue
+      fi
+      die "source pattern matched nothing: $source_dir/$match"
+    }
+
+    if [ "$project_scope" = yes ] && [ "$(jq -r '.scanUnmanaged // false' <<<"$group")" = true ]; then
+      scan_unmanaged "$destination"
+    fi
+  done < <(jq -c ".${key}[]" "$manifest")
+
+}
+
+skill_exists() {
+  local requested=$1 manifest source_dir
+  for manifest in "${MANIFESTS[@]}"; do
+    while IFS= read -r source_dir; do
+      [ -e "$ROOT/$source_dir/$requested" ] && return 0
+    done < <(jq -r '.projectLinks[].sourceDir' "$manifest")
+  done
+  return 1
+}
+
+validate_skills() {
+  local requested
+  for requested in "${SKILLS[@]}"; do
+    case "$requested" in
+      ""|.|..|*/*) die "invalid project skill name: $requested" ;;
+    esac
+    skill_exists "$requested" || die "unknown project skill: $requested"
+  done
+}
+
+wire_manifest() {
+  local manifest=$1 name source destination prefix path owner reason
+  name=$(jq -r '.harness' "$manifest")
+  printf '[%s]\n' "$name"
+
+  wire_groups "$manifest" links no
+  wire_groups "$manifest" projectLinks yes
+
+  while IFS=$'\t' read -r source destination prefix; do
+    source="$ROOT/$source"
+    destination=$(expand_home "$destination")
+    [ -f "$source" ] || die "import source missing: $source"
+    wire_import "$source" "$destination" "$prefix"
+  done < <(jq -r '.imports[] | [.source, .destination, .prefix] | @tsv' "$manifest")
+
+  while IFS=$'\t' read -r path owner reason; do
+    path=$(expand_home "$path")
+    printf '  external   %s (%s: %s)\n' "$path" "$owner" "$reason"
+  done < <(jq -r '.external[] | [.path, .owner, .reason] | @tsv' "$manifest")
+
+  while IFS=$'\t' read -r path reason; do
+    path=$(expand_home "$path")
+    printf '  deferred   %s (%s)\n' "$path" "$reason"
+  done < <(jq -r '.deferred[] | [.path, .reason] | @tsv' "$manifest")
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run) MODE=dry-run ;;
+    --apply) MODE=apply ;;
+    --harness)
+      [ $# -ge 2 ] || die "--harness requires a name"
+      HARNESS=$2
+      shift
+      ;;
+    --project)
+      [ $# -ge 2 ] || die "--project requires a path"
+      PROJECT=$2
+      shift
+      ;;
+    --skill)
+      [ $# -ge 2 ] || die "--skill requires a name"
+      SKILLS+=("$2")
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *) die "unknown argument: $1" ;;
+  esac
+  shift
+done
+
+command -v jq >/dev/null 2>&1 || die "jq is required"
+[ ${#SKILLS[@]} -eq 0 ] || [ -n "$PROJECT" ] || die "--skill requires --project"
+
+if [ -n "$PROJECT" ]; then
+  [ -d "$PROJECT" ] || die "project directory does not exist: $PROJECT"
+  PROJECT=$(cd "$PROJECT" && pwd -P)
+fi
+
+MANIFESTS=()
+if [ -n "$HARNESS" ]; then
+  [ -f "$ROOT/harness/$HARNESS/wiring.json" ] || die "unknown harness: $HARNESS"
+  MANIFESTS+=("$ROOT/harness/$HARNESS/wiring.json")
+else
+  shopt -s nullglob
+  MANIFESTS=("$ROOT"/harness/*/wiring.json)
+  shopt -u nullglob
+  [ ${#MANIFESTS[@]} -gt 0 ] || die "no wiring manifests found"
+fi
+
+for manifest in "${MANIFESTS[@]}"; do
+  validate_manifest "$manifest"
+done
+
+[ ${#SKILLS[@]} -eq 0 ] || validate_skills
+
+for manifest in "${MANIFESTS[@]}"; do
+  wire_manifest "$manifest"
+done
+
+printf 'summary: %s change(s), %s unchanged, %s warning(s) [%s]\n' \
+  "$CHANGES" "$UNCHANGED" "$WARNINGS" "$MODE"
+
+[ "$WARNINGS" -eq 0 ]

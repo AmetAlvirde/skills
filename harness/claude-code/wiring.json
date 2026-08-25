@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "harness": "claude-code",
+  "links": [
+    {
+      "sourceDir": "global",
+      "match": "*",
+      "destination": "~/.claude/skills"
+    },
+    {
+      "sourceDir": "agents",
+      "match": "*.md",
+      "destination": "~/.claude/agents"
+    },
+    {
+      "sourceDir": "commands",
+      "match": "*.md",
+      "destination": "~/.claude/commands"
+    },
+    {
+      "sourceDir": "hooks",
+      "match": "*.sh",
+      "exclude": "*.test.sh",
+      "destination": "~/.claude/hooks"
+    }
+  ],
+  "projectLinks": [
+    {
+      "sourceDir": "engineering",
+      "match": "*",
+      "destination": ".claude/skills",
+      "selectable": true,
+      "scanUnmanaged": true
+    }
+  ],
+  "imports": [
+    {
+      "source": "global/unslop/VOICE.md",
+      "destination": "~/.claude/CLAUDE.md",
+      "prefix": "@"
+    }
+  ],
+  "external": [
+    {
+      "path": "~/.claude/hooks/herdr-agent-state.sh",
+      "owner": "herdr",
+      "reason": "Vendor-managed hook and settings entry; its installer owns updates."
+    },
+    {
+      "path": "~/.claude/statusline-command.sh",
+      "owner": "local",
+      "reason": "Machine-local status line; not part of the canonical skill suite."
+    }
+  ],
+  "deferred": [
+    {
+      "path": "~/.claude/settings.json",
+      "reason": "The sanitized hooks, attribution, model, and auto-mode baseline is the next Phase 0 increment."
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "catalogues": {
+    "claude-code/anthropic": {
+      "targets": {
+        "opus-medium": {
+          "model": "claude-opus-5",
+          "effort": "medium"
+        },
+        "opus-high": {
+          "model": "claude-opus-5",
+          "effort": "high"
+        },
+        "opus-xhigh": {
+          "model": "claude-opus-5",
+          "effort": "xhigh"
+        },
+        "sonnet-medium": {
+          "model": "claude-sonnet-5",
+          "effort": "medium"
+        }
+      }
+    },
+    "opencode/openai": {
+      "targets": {
+        "gpt-medium": {
+          "model": "openai/gpt-5.6-sol",
+          "variant": "medium"
+        },
+        "gpt-high": {
+          "model": "openai/gpt-5.6-sol",
+          "variant": "high"
+        },
+        "gpt-xhigh": {
+          "model": "openai/gpt-5.6-sol",
+          "variant": "xhigh"
+        }
+      }
+    }
+  },
+  "agents": {
+    "ennio": {
+      "default": {
+        "claude-code": "claude-code/anthropic:opus-high",
+        "opencode": "opencode/openai:gpt-high"
+      },
+      "escalation": {
+        "claude-code": "claude-code/anthropic:opus-xhigh",
+        "opencode": "opencode/openai:gpt-xhigh"
+      }
+    },
+    "bit": {
+      "default": {
+        "claude-code": "claude-code/anthropic:opus-medium",
+        "opencode": "opencode/openai:gpt-medium"
+      },
+      "escalation": {
+        "claude-code": "claude-code/anthropic:opus-high",
+        "opencode": "opencode/openai:gpt-high"
+      }
+    },
+    "vitruv": {
+      "default": {
+        "claude-code": "claude-code/anthropic:opus-high",
+        "opencode": "opencode/openai:gpt-high"
+      },
+      "escalation": {
+        "claude-code": "claude-code/anthropic:opus-xhigh",
+        "opencode": "opencode/openai:gpt-xhigh"
+      }
+    },
+    "tux": {
+      "default": {
+        "claude-code": "claude-code/anthropic:sonnet-medium",
+        "opencode": "opencode/openai:gpt-medium"
+      },
+      "escalation": {
+        "claude-code": "claude-code/anthropic:opus-high",
+        "opencode": "opencode/openai:gpt-high"
+      }
+    },
+    "linn": {
+      "default": {
+        "claude-code": "claude-code/anthropic:sonnet-medium",
+        "opencode": "opencode/openai:gpt-medium"
+      },
+      "escalation": {
+        "claude-code": "claude-code/anthropic:opus-high",
+        "opencode": "opencode/openai:gpt-high"
+      }
+    },
+    "radar": {
+      "default": {
+        "claude-code": "claude-code/anthropic:opus-medium",
+        "opencode": "opencode/openai:gpt-medium"
+      },
+      "escalation": {
+        "claude-code": "claude-code/anthropic:opus-high",
+        "opencode": "opencode/openai:gpt-high"
+      }
+    }
+  },
+  "skillPins": {
+    "aar": {
+      "claude-code": "claude-code/anthropic:opus-medium",
+      "opencode": "opencode/openai:gpt-medium"
+    },
+    "adr": {
+      "claude-code": "claude-code/anthropic:opus-high",
+      "opencode": "opencode/openai:gpt-high"
+    },
+    "audit": {
+      "claude-code": "claude-code/anthropic:opus-xhigh",
+      "opencode": "opencode/openai:gpt-xhigh"
+    },
+    "codebase-grill": {
+      "claude-code": "claude-code/anthropic:opus-high",
+      "opencode": "opencode/openai:gpt-high"
+    },
+    "codebase-map": {
+      "claude-code": "claude-code/anthropic:opus-high",
+      "opencode": "opencode/openai:gpt-high"
+    },
+    "codebase-review": {
+      "claude-code": "claude-code/anthropic:opus-high",
+      "opencode": "opencode/openai:gpt-high"
+    },
+    "pr-review": {
+      "claude-code": "claude-code/anthropic:opus-high",
+      "opencode": "opencode/openai:gpt-high"
+    },
+    "refactor": {
+      "claude-code": "claude-code/anthropic:opus-high",
+      "opencode": "opencode/openai:gpt-high"
+    }
+  },
+  "knownDegradations": {
+    "opencodeNaturalLanguageSkillInvocation": "The skill inherits the active agent target because OpenCode cannot change model or variant during the loading turn."
+  }
+}
