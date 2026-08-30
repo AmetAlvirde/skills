@@ -41,6 +41,17 @@ target_field() {
     '.catalogues[$catalogue].targets[$tier][$field]' "$MODELS"
 }
 
+toml_field() {
+  python3 - "$1" "$2" <<'PY'
+import sys
+import tomllib
+
+with open(sys.argv[1], "rb") as handle:
+    value = tomllib.load(handle)[sys.argv[2]]
+print(value)
+PY
+}
+
 semantic_target_field() {
   local reference=$1 field=$2 target_ref catalogue tier
   target_ref=$(jq -er --arg reference "$reference" \
@@ -586,6 +597,167 @@ ok 'foreign daylog symlink is reported' grep -Fq \
 ok 'foreign daylog symlink is not replaced' test \
   "$(readlink "$FOREIGN_DAYLOG_LINK_HOME/.config/opencode/plugins/daylog-trigger.ts")" = \
   "$W/foreign-daylog.ts"
+
+echo 'Codex harness'
+CODEX_HOME="$W/codex-home"
+CODEX_PROJECT="$W/codex-project"
+mkdir -p "$CODEX_HOME/.claude" "$CODEX_HOME/.config/opencode" \
+  "$CODEX_PROJECT/.claude" "$CODEX_PROJECT/.opencode"
+CODEX_PROJECT=$(cd "$CODEX_PROJECT" && pwd -P)
+printf '%s\n' '{"sentinel":"claude"}' >"$CODEX_HOME/.claude/settings.json"
+printf '%s\n' '{"sentinel":"opencode"}' >"$CODEX_HOME/.config/opencode/config.json"
+printf '%s\n' 'claude project sentinel' >"$CODEX_PROJECT/.claude/sentinel"
+printf '%s\n' 'opencode project sentinel' >"$CODEX_PROJECT/.opencode/sentinel"
+before_other_harnesses=$(find "$CODEX_HOME/.claude" "$CODEX_HOME/.config/opencode" \
+  "$CODEX_PROJECT/.claude" "$CODEX_PROJECT/.opencode" -type f -exec shasum {} + | sort)
+
+HOME="$CODEX_HOME" "$WIRE" --harness codex --project "$CODEX_PROJECT" \
+  >"$W/codex-dry.out"
+ok 'Codex global dry-run reports canonical skill link' grep -Fq \
+  "link       $CODEX_HOME/.agents/skills/map -> $ROOT/global/map" "$W/codex-dry.out"
+ok 'Codex dry-run reports custom agent render' grep -Fq \
+  "render     $CODEX_HOME/.codex/agents/ennio.toml" "$W/codex-dry.out"
+ok 'Codex project dry-run reports canonical skill link' grep -Fq \
+  "link       $CODEX_PROJECT/.agents/skills/design -> $ROOT/engineering/design" \
+  "$W/codex-dry.out"
+ok 'Codex dry-run creates no destinations' test ! -e "$CODEX_HOME/.agents"
+
+HOME="$CODEX_HOME" "$WIRE" --harness codex --project "$CODEX_PROJECT" --apply \
+  >"$W/codex-first.out"
+ok 'Codex global skill applies as a symlink' test -L "$CODEX_HOME/.agents/skills/map"
+ok 'Codex global skill has one-hop canonical target' test \
+  "$(readlink "$CODEX_HOME/.agents/skills/map")" = "$ROOT/global/map"
+ok 'Codex project skill applies as a symlink' test -L \
+  "$CODEX_PROJECT/.agents/skills/design"
+ok 'Codex project skill has one-hop canonical target' test \
+  "$(readlink "$CODEX_PROJECT/.agents/skills/design")" = "$ROOT/engineering/design"
+
+after_other_harnesses=$(find "$CODEX_HOME/.claude" "$CODEX_HOME/.config/opencode" \
+  "$CODEX_PROJECT/.claude" "$CODEX_PROJECT/.opencode" -type f -exec shasum {} + | sort)
+ok 'Codex wiring does not modify Claude or OpenCode state' test \
+  "$before_other_harnesses" = "$after_other_harnesses"
+
+for name in ennio bit vitruv tux linn radar; do
+  codex_file="$CODEX_HOME/.codex/agents/$name.toml"
+  ok "Codex renders $name TOML" test -f "$codex_file"
+  ok "Codex $name carries managed marker" grep -Fq \
+    "# managed by harness/wire; source: agents/$name.md" "$codex_file"
+  ok "Codex $name has canonical name" test "$(toml_field "$codex_file" name)" = "$name"
+  ok "Codex $name reuses canonical description" test \
+    "$(toml_field "$codex_file" description)" = \
+    "$(jq -r --arg name "$name" '.agents[$name].description' "$ROOT/agents/manifest.json")"
+  ok "Codex $name maps model" test \
+    "$(toml_field "$codex_file" model)" = "$(target_field "$name" codex model)"
+  ok "Codex $name maps effort" test \
+    "$(toml_field "$codex_file" model_reasoning_effort)" = \
+    "$(target_field "$name" codex model_reasoning_effort)"
+  instructions=$(toml_field "$codex_file" developer_instructions)
+  ok "Codex $name embeds canonical prompt" grep -Fq \
+    "$(head -n 1 "$ROOT/agents/$name.md")" <<<"$instructions"
+done
+
+CODEX_FILTERED_PROJECT="$W/codex-filtered-project"
+mkdir -p "$CODEX_FILTERED_PROJECT"
+CODEX_FILTERED_PROJECT=$(cd "$CODEX_FILTERED_PROJECT" && pwd -P)
+HOME="$CODEX_HOME" "$WIRE" --harness codex --project "$CODEX_FILTERED_PROJECT" \
+  --skill codebase-map --apply >"$W/codex-filtered.out"
+ok 'Codex selected project skill links' test -L \
+  "$CODEX_FILTERED_PROJECT/.agents/skills/codebase-map"
+ok 'Codex unselected project skill stays absent' test ! -e \
+  "$CODEX_FILTERED_PROJECT/.agents/skills/codebase-grill"
+
+HOME="$CODEX_HOME" "$WIRE" --harness codex --project "$CODEX_PROJECT" --apply \
+  >"$W/codex-second.out"
+ok 'Codex wiring is idempotent' grep -Fq 'summary: 0 change(s)' "$W/codex-second.out"
+
+cp "$CODEX_HOME/.codex/agents/ennio.toml" "$W/ennio-canonical.toml"
+printf '%s\n' '# managed by harness/wire; source: agents/ennio.md' 'stale = true' \
+  >"$CODEX_HOME/.codex/agents/ennio.toml"
+HOME="$CODEX_HOME" "$WIRE" --harness codex --apply >"$W/codex-stale.out"
+ok 'Codex stale managed agent is rerendered' grep -Fq \
+  "render     $CODEX_HOME/.codex/agents/ennio.toml" "$W/codex-stale.out"
+ok 'Codex stale managed agent returns to canonical output' cmp -s \
+  "$W/ennio-canonical.toml" "$CODEX_HOME/.codex/agents/ennio.toml"
+
+CODEX_FOREIGN_HOME="$W/codex-foreign-home"
+mkdir -p "$CODEX_FOREIGN_HOME/.codex/agents"
+printf '%s\n' 'foreign = true' >"$CODEX_FOREIGN_HOME/.codex/agents/ennio.toml"
+if HOME="$CODEX_FOREIGN_HOME" "$WIRE" --harness codex --apply \
+  >"$W/codex-foreign.out" 2>&1; then
+  codex_foreign_status=0
+else
+  codex_foreign_status=$?
+fi
+ok 'foreign Codex agent returns warning status' test "$codex_foreign_status" -ne 0
+ok 'foreign Codex agent is refused' grep -Fq \
+  "$CODEX_FOREIGN_HOME/.codex/agents/ennio.toml (refusing to replace)" \
+  "$W/codex-foreign.out"
+ok 'foreign Codex agent remains unchanged' grep -Fqx 'foreign = true' \
+  "$CODEX_FOREIGN_HOME/.codex/agents/ennio.toml"
+
+CODEX_UNMANAGED_PROJECT="$W/codex-unmanaged-project"
+mkdir -p "$CODEX_UNMANAGED_PROJECT/.agents/skills"
+CODEX_UNMANAGED_PROJECT=$(cd "$CODEX_UNMANAGED_PROJECT" && pwd -P)
+printf '%s\n' 'foreign skill' >"$CODEX_UNMANAGED_PROJECT/.agents/skills/local"
+if HOME="$CODEX_HOME" "$WIRE" --harness codex --project "$CODEX_UNMANAGED_PROJECT" \
+  --apply >"$W/codex-unmanaged.out" 2>&1; then
+  codex_unmanaged_status=0
+else
+  codex_unmanaged_status=$?
+fi
+ok 'Codex unmanaged project entry returns warning status' test \
+  "$codex_unmanaged_status" -ne 0
+ok 'Codex unmanaged project entry is reported' grep -Fq \
+  "$CODEX_UNMANAGED_PROJECT/.agents/skills/local -> review/remove" \
+  "$W/codex-unmanaged.out"
+
+INVALID_ROOT="$W/invalid-root"
+mkdir -p "$INVALID_ROOT"
+cp -R "$ROOT/harness" "$ROOT/agents" "$ROOT/global" "$ROOT/engineering" \
+  "$INVALID_ROOT/"
+jq 'del(.catalogues["codex/openai"])' "$ROOT/harness/models.json" \
+  >"$INVALID_ROOT/harness/models.json"
+if HOME="$W/invalid-home" "$INVALID_ROOT/harness/wire" --harness codex \
+  >"$W/codex-invalid.out" 2>&1; then
+  codex_invalid_status=0
+else
+  codex_invalid_status=$?
+fi
+ok 'invalid Codex model configuration fails' test "$codex_invalid_status" -ne 0
+ok 'invalid Codex model configuration is explained' grep -Fq \
+  'model target does not resolve for codex agent' "$W/codex-invalid.out"
+
+dialogue_roster=$(for source in "$ROOT"/global/*/SKILL.md "$ROOT"/engineering/*/SKILL.md; do
+  if grep -Fqx 'disable-model-invocation: true' "$source"; then
+    basename "$(dirname "$source")"
+  fi
+done | sort)
+codex_policy_roster=$(find "$ROOT/global" "$ROOT/engineering" \
+  -path '*/agents/openai.yaml' -print | while IFS= read -r metadata; do
+    grep -Fqx '  allow_implicit_invocation: false' "$metadata" && \
+      basename "$(dirname "$(dirname "$metadata")")"
+  done | sort)
+ok 'Codex invocation policy matches dialogue-bound skill roster' test \
+  "$dialogue_roster" = "$codex_policy_roster"
+
+PLUGIN="$ROOT/plugins/skills"
+MARKETPLACE="$ROOT/.agents/plugins/marketplace.json"
+ok 'Codex plugin manifest is valid JSON' jq -e . "$PLUGIN/.codex-plugin/plugin.json"
+ok 'Codex marketplace is valid JSON' jq -e . "$MARKETPLACE"
+ok 'Codex plugin and marketplace names match' test \
+  "$(jq -r '.name' "$PLUGIN/.codex-plugin/plugin.json")" = \
+  "$(jq -r '.plugins[0].name' "$MARKETPLACE")"
+expected_plugin_skills=$(find "$ROOT/global" "$ROOT/engineering" \
+  -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+actual_plugin_skills=$(find "$PLUGIN/skills" -mindepth 1 -maxdepth 1 \
+  \( -type l -o -type d \) | wc -l | tr -d ' ')
+ok 'Codex plugin flat tree covers every canonical skill' test \
+  "$expected_plugin_skills" = "$actual_plugin_skills"
+while IFS= read -r skill; do
+  ok "plugin skill $(basename "$skill") resolves to canonical source" test -f "$skill/SKILL.md"
+done < <(find "$PLUGIN/skills" -mindepth 1 -maxdepth 1 \( -type l -o -type d \) | sort)
+ok 'Codex generated plugin projections are current' \
+  bash "$ROOT/harness/codex/build-plugin" --check
 
 echo
 echo "$pass passed, $fail failed"

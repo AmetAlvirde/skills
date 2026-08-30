@@ -241,40 +241,78 @@ render_agent() {
         --arg description "$description" --arg model "$model" --arg variant "$level" \
         '$native + {name:$name, description:$description, model:$model, variant:$variant}')
       ;;
+    codex)
+      level=$(jq -r '.model_reasoning_effort' <<<"$model_data")
+      [ "$native" = '{}' ] || die "Codex agent metadata contains unsupported fields: $name"
+      ;;
     *) die "unknown agent render format: $format" ;;
   esac
 
-  marker="<!-- managed by harness/wire; source: agents/$name.md -->"
+  if [ "$format" = codex ]; then
+    marker="# managed by harness/wire; source: agents/$name.md"
+  else
+    marker="<!-- managed by harness/wire; source: agents/$name.md -->"
+  fi
   temp=$(mktemp "${TMPDIR:-/tmp}/skills-agent.XXXXXX")
-  {
-    printf '%s\n' '---' "$frontmatter" '---' '' "$marker" ''
-    cat "$source"
-    printf '\n## Harness tier\n\n'
-    if [ "$format" = claude-code ]; then
-      printf 'Configured default: %s at effort %s. ' "\`$model\`" "\`$level\`"
-    else
-      printf 'Configured default: %s at variant %s. ' "\`$model\`" "\`$level\`"
-    fi
+  if [ "$format" = codex ]; then
+    local instructions instructions_json
+    instructions=$({
+      cat "$source"
+      printf '\n## Harness tier\n\n'
+      printf 'Configured default: \140%s\140 at effort \140%s\140. ' "$model" "$level"
+      target_ref=$(jq -er --arg name "$name" --arg target "$target" \
+        '.agents[$name].escalation[$target]' "$models") ||
+        die "escalation target missing for $target agent $name"
+      catalogue=${target_ref%%:*}
+      tier=${target_ref#*:}
+      model_data=$(jq -ec --arg catalogue "$catalogue" --arg tier "$tier" \
+        '.catalogues[$catalogue].targets[$tier]' "$models") ||
+        die "escalation target does not resolve for $target agent $name: $target_ref"
+      printf 'Configured escalation: \140%s\140 at effort \140%s\140.\n\n' \
+        "$(jq -r '.model' <<<"$model_data")" \
+        "$(jq -r '.model_reasoning_effort' <<<"$model_data")"
+      printf '%s\n' "Close every run with \`— ran: <model-id> · effort: <tier>\`. Use the runtime value when the harness exposes it; otherwise label the value as configured."
+    })
+    instructions_json=$(jq -Rn --arg value "$instructions" '$value')
+    {
+      printf '%s\n' "$marker"
+      printf 'name = %s\n' "$(jq -Rn --arg value "$name" '$value')"
+      printf 'description = %s\n' "$(jq -Rn --arg value "$description" '$value')"
+      printf 'model = %s\n' "$(jq -Rn --arg value "$model" '$value')"
+      printf 'model_reasoning_effort = %s\n' "$(jq -Rn --arg value "$level" '$value')"
+      printf 'developer_instructions = %s\n' "$instructions_json"
+    } >"$temp"
+  else
+    {
+      printf '%s\n' '---' "$frontmatter" '---' '' "$marker" ''
+      cat "$source"
+      printf '\n## Harness tier\n\n'
+      if [ "$format" = claude-code ]; then
+        printf 'Configured default: %s at effort %s. ' "\`$model\`" "\`$level\`"
+      else
+        printf 'Configured default: %s at variant %s. ' "\`$model\`" "\`$level\`"
+      fi
 
-    target_ref=$(jq -er --arg name "$name" --arg target "$target" \
-      '.agents[$name].escalation[$target]' "$models") ||
-      die "escalation target missing for $target agent $name"
-    catalogue=${target_ref%%:*}
-    tier=${target_ref#*:}
-    model_data=$(jq -ec --arg catalogue "$catalogue" --arg tier "$tier" \
-      '.catalogues[$catalogue].targets[$tier]' "$models") ||
-      die "escalation target does not resolve for $target agent $name: $target_ref"
-    if [ "$format" = claude-code ]; then
-      printf 'Configured escalation: %s at effort %s.\n\n' \
-        "\`$(jq -r '.model' <<<"$model_data")\`" "\`$(jq -r '.effort' <<<"$model_data")\`"
-      printf '%s' "Close every run with \`— ran: <model-id> · effort: <tier>\`. "
-    else
-      printf 'Configured escalation: %s at variant %s.\n\n' \
-        "\`$(jq -r '.model' <<<"$model_data")\`" "\`$(jq -r '.variant' <<<"$model_data")\`"
-      printf '%s' "Close every run with \`— ran: <model-id> · variant: <tier>\`. "
-    fi
-    printf 'Use the runtime value when the harness exposes it; otherwise label the value as configured.\n'
-  } >"$temp"
+      target_ref=$(jq -er --arg name "$name" --arg target "$target" \
+        '.agents[$name].escalation[$target]' "$models") ||
+        die "escalation target missing for $target agent $name"
+      catalogue=${target_ref%%:*}
+      tier=${target_ref#*:}
+      model_data=$(jq -ec --arg catalogue "$catalogue" --arg tier "$tier" \
+        '.catalogues[$catalogue].targets[$tier]' "$models") ||
+        die "escalation target does not resolve for $target agent $name: $target_ref"
+      if [ "$format" = claude-code ]; then
+        printf 'Configured escalation: %s at effort %s.\n\n' \
+          "\`$(jq -r '.model' <<<"$model_data")\`" "\`$(jq -r '.effort' <<<"$model_data")\`"
+        printf '%s' "Close every run with \`— ran: <model-id> · effort: <tier>\`. "
+      else
+        printf 'Configured escalation: %s at variant %s.\n\n' \
+          "\`$(jq -r '.model' <<<"$model_data")\`" "\`$(jq -r '.variant' <<<"$model_data")\`"
+        printf '%s' "Close every run with \`— ran: <model-id> · variant: <tier>\`. "
+      fi
+      printf 'Use the runtime value when the harness exposes it; otherwise label the value as configured.\n'
+    } >"$temp"
+  fi
   chmod 644 "$temp"
 
   if [ -f "$destination" ] && cmp -s "$temp" "$destination"; then
@@ -295,7 +333,9 @@ render_agent() {
         return
         ;;
     esac
-  elif [ -e "$destination" ] && ! grep -Fq '<!-- managed by harness/wire; source: agents/' "$destination"; then
+  elif [ -e "$destination" ] &&
+    ! grep -Fq '<!-- managed by harness/wire; source: agents/' "$destination" &&
+    ! grep -Fq '# managed by harness/wire; source: agents/' "$destination"; then
     printf '  unmanaged  %s (refusing to replace)\n' "$destination"
     WARNINGS=$((WARNINGS + 1))
     rm -f "$temp"
@@ -314,7 +354,7 @@ render_agent() {
 
 render_agents() {
   local source_dir=$1 catalog=$2 metadata=$3 destination=$4 format=$5 target=$6
-  local name description native source
+  local name description native source extension
   local models="$ROOT/harness/models.json"
 
   jq -e --slurpfile catalog "$catalog" '
@@ -323,6 +363,8 @@ render_agents() {
     ((.agents | keys) == ($catalog[0].agents | keys))
   ' "$metadata" >/dev/null || die "agent metadata does not match catalog: $metadata"
 
+  extension=md
+  [ "$format" = codex ] && extension=toml
   while IFS= read -r name; do
     description=$(jq -er --arg name "$name" '.agents[$name].description' "$catalog") ||
       die "agent description missing: $name"
@@ -331,7 +373,7 @@ render_agents() {
     source="$ROOT/$source_dir/$name.md"
     [ -f "$source" ] || die "agent prompt missing: $source"
     render_agent "$format" "$target" "$name" "$description" "$native" "$source" \
-      "$destination/$name.md" "$models"
+      "$destination/$name.$extension" "$models"
   done < <(jq -r '.agents | keys[]' "$catalog")
 }
 
@@ -558,7 +600,7 @@ preflight_manifest() {
     jq -e '.version == 1 and (.agents | type == "object")' "$ROOT/$metadata" >/dev/null ||
       die "invalid agent metadata: $ROOT/$metadata"
     case "$format:$target" in
-      claude-code:claude-code|opencode:opencode) ;;
+      claude-code:claude-code|opencode:opencode|codex:codex) ;;
       *) die "invalid agent render format and target: $format:$target" ;;
     esac
   done < <(jq -r '.agentRenders[] | [.sourceDir, .catalog, .metadata, .format, .target] | @tsv' "$manifest")

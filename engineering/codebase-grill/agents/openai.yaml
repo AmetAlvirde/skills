@@ -1,0 +1,5 @@
+interface:
+  display_name: Codebase Grill
+  short_description: Interrogate a codebase through guided convergence.
+policy:
+  allow_implicit_invocation: false

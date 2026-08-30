@@ -1,0 +1,5 @@
+interface:
+  display_name: Standup
+  short_description: Open the day with a cross-project briefing.
+policy:
+  allow_implicit_invocation: false

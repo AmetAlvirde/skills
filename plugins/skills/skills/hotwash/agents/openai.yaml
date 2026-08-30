@@ -1,0 +1,5 @@
+interface:
+  display_name: Hotwash
+  short_description: Close the day with an evidence-based debrief.
+policy:
+  allow_implicit_invocation: false

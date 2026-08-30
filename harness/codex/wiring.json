@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "harness": "codex",
+  "links": [
+    {
+      "sourceDir": "global",
+      "match": "*",
+      "destination": "~/.agents/skills"
+    }
+  ],
+  "projectLinks": [
+    {
+      "sourceDir": "engineering",
+      "match": "*",
+      "destination": ".agents/skills",
+      "selectable": true,
+      "scanUnmanaged": true
+    }
+  ],
+  "imports": [],
+  "jsonMerges": [],
+  "agentRenders": [
+    {
+      "sourceDir": "agents",
+      "catalog": "agents/manifest.json",
+      "metadata": "harness/codex/agents.json",
+      "destination": "~/.codex/agents",
+      "format": "codex",
+      "target": "codex"
+    }
+  ],
+  "commandRenders": [],
+  "external": [],
+  "deferred": []
+}

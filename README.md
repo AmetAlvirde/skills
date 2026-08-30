@@ -12,7 +12,8 @@ tiering, and the **router table** live below (read on demand).
 - **`global/`**: `map`, `grill`, `diverge`, `converge`, `handoff`,
   `skill-setup`, `project-setup`, `standup`, `hotwash`, `branch-prune`,
   `unslop`.
-  Symlinked into `~/.claude/skills/`; apply in every repo.
+  Symlinked into `~/.claude/skills/` and `~/.agents/skills/`; apply in every
+  repo for the selected harness.
 - **`engineering/`**: the dev-flow composition layer: the increment suite
   (`prototype`, `aar`, `audit`, `spec`, `issues`, `implement`, `refactor`, `adr`,
   `codebase-map`, `codebase-grill`, `codebase-review`, `pr-review`, `review`,
@@ -28,6 +29,9 @@ tiering, and the **router table** live below (read on demand).
 - **`harness/`**: the capability contract, model map, native configuration,
   protocol adapters, wiring manifests, and the one manifest executor. It owns
   harness mechanics, never copies of canonical behavior.
+- **`plugins/skills/`**: Codex skill-only distribution package. Its flat
+  `skills/` tree is generated deterministically from the canonical `global/`
+  and `engineering/` directories; it has no independently maintained bodies.
 
 `map` and `grill` are complements, the general front doors to the `diverge` and
 `converge` disciplines, which own the method and the artifact. `skill-setup`
@@ -46,17 +50,20 @@ is no installer per harness.
 ~/Dev/skills/global/<skill>/SKILL.md   ← source (this repo)
   ↑ symlink
 ~/.claude/skills/<skill>               ← where Claude Code discovers it (everywhere)
+~/.agents/skills/<skill>               ← where Codex discovers it (everywhere)
 
 ~/Dev/skills/engineering/<skill>       ← source (this repo)
   ↑ symlink (per-skill, opt-in per repo)
 <repo>/.claude/skills/<skill>          ← discovered only when that repo is cwd
 <repo>/.opencode/skills/<skill>         ← same selection for OpenCode
+<repo>/.agents/skills/<skill>           ← same selection for Codex
 
 ~/Dev/skills/agents/<agent>.md         ← portable prompt (this repo)
 agents/manifest.json + harness metadata + harness/models.json
   ↓ harness/wire render
 ~/.claude/agents/<agent>.md            ← Claude-native runtime file
 ~/.config/opencode/agents/<agent>.md   ← OpenCode-native runtime file
+~/.codex/agents/<agent>.toml           ← Codex custom-agent file
 
 ~/Dev/skills/global/{standup,hotwash}/SKILL.md
   ↓ harness/wire render
@@ -135,14 +142,60 @@ To link every engineering skill into a repo for one harness:
 Repeat `--skill <name>` to select a subset. Project links remain one per skill,
 and the executor reports real or foreign entries in the harness's project skill
 directory as `unmanaged` without deleting them. OpenCode uses the same command
-with `--harness opencode` and installs links under `.opencode/skills/`.
+with `--harness opencode` and installs links under `.opencode/skills/`; Codex
+uses `--harness codex` and `.agents/skills/`.
 
 To wire a repo to the `engineering/` skills, run `project-setup` from that
-repo's root. It selects Claude Code, OpenCode, or both, defaulting to both, and
-calls `harness/wire` once per selected harness with the same skill selectors.
-It gitignores only the selected `.claude/skills/` and/or `.opencode/skills/`
-directories. Restart OpenCode after project wiring so it discovers the new
-project skills.
+repo's root. It selects Claude Code, OpenCode, Codex, or a combination,
+defaulting to all three, and calls `harness/wire` once per selected harness
+with the same skill selectors.
+It gitignores only the selected `.claude/skills/`, `.opencode/skills/`, and/or
+`.agents/skills/` directories. Restart OpenCode after project wiring so it
+discovers the new project skills; Codex normally detects skill changes
+automatically.
+
+### Codex
+
+Preview global skills and all six custom agents without touching live config:
+
+```sh
+~/Dev/skills/harness/wire --harness codex
+```
+
+Apply global links and render agents, or wire a project with the same selection
+semantics:
+
+```sh
+~/Dev/skills/harness/wire --harness codex --apply
+~/Dev/skills/harness/wire --harness codex --project /path/to/repo --apply
+```
+
+Codex loads user skills from `~/.agents/skills/`, project skills from
+`<repo>/.agents/skills/`, and custom agents from `~/.codex/agents/*.toml`.
+`agents/*.md` remains the only editable persona body; the executor combines it
+with `agents/manifest.json`, `harness/codex/agents.json`, and
+`harness/models.json`. The TOML files carry a managed marker and use Codex's
+`model` and `model_reasoning_effort` fields.
+
+The four dialogue-bound skills carry `agents/openai.yaml` with implicit
+invocation disabled. Codex has no direct equivalent for Claude's
+`user-invocable: false`, skill-level `model`, or skill-level `effort`; those
+fields remain valid Claude metadata and Codex inherits the active agent tier
+when loading a skill. The harness does not port Claude/OpenCode hooks, boot
+commands, retry commands, or always-loaded voice configuration to Codex.
+
+The repository marketplace exposes the skill-only `skills` plugin:
+
+```sh
+codex plugin marketplace add AmetAlvirde/skills
+codex plugin add skills@amet-skills
+```
+
+The plugin makes all bundled skills install-scoped because the plugin format
+does not preserve this repository's global-versus-project selection boundary.
+Use `harness/wire` when that distinction matters. Run
+`harness/codex/build-plugin --apply` after canonical skill changes; `--check`
+proves the generated flat tree has not drifted.
 
 ### OpenCode GPT smoke
 
@@ -299,10 +352,10 @@ radius remains unverified. The command starts a new turn, carries the reason,
 and cannot retry itself. `retry` is distinct from agent `escalation`, which
 belongs to a persona run.
 
-Every agent signs its tier. Claude Code uses `— ran: <model-id> · effort:
-<tier>`; OpenCode uses `variant` in place of `effort`. The agent reports the
-runtime value when the harness exposes it and labels a configured value rather
-than presenting it as observed fact. Any escalation includes its reason.
+Every agent signs its tier. Claude Code and Codex use `— ran: <model-id> ·
+effort: <tier>`; OpenCode uses `variant` in place of `effort`. The agent reports
+the runtime value when the harness exposes it and labels a configured value
+rather than presenting it as observed fact. Any escalation includes its reason.
 
 ## Commands
 
@@ -330,6 +383,12 @@ adapters because a loaded skill cannot promote itself there either. All
 adapters pass `$ARGUMENTS` and resolve their model tier through
 `harness/models.json`; the four dialogue-bound skills remain denied to
 OpenCode's native skill tool.
+
+Codex renders the six personas as spawnable custom agents, not persistent
+primary-session boot commands. Their TOML files reuse the canonical prompts,
+descriptions, and semantic model mapping. Codex custom agents inherit parent
+permissions unless a file overrides broad session settings, so prompt role
+boundaries are not granular tool ACLs.
 
 ## Router
 
@@ -377,7 +436,8 @@ taxonomy.
 
 Reach is scoped **per repo**, not by this flag: `engineering/` skills exist only
 where `project-setup` symlinked them (`<repo>/.claude/skills/` and/or
-`<repo>/.opencode/skills/`), and that skill asks which subset to link. A repo
+`<repo>/.opencode/skills/` and/or `<repo>/.agents/skills/`), and that skill asks
+which subset to link. A repo
 with no engineering skills linked, say a writing vault, never sees
 `codebase-map` in context whether it is guarded or not.
 

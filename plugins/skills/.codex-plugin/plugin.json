@@ -1,0 +1,22 @@
+{
+  "name": "skills",
+  "version": "0.1.0",
+  "description": "Amet Alvirde's reusable global and engineering agent skills.",
+  "author": {
+    "name": "Amet Alvirde"
+  },
+  "repository": "https://github.com/AmetAlvirde/skills",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Amet's Skills",
+    "shortDescription": "Reusable thinking and engineering workflows",
+    "longDescription": "Global thinking primitives and opt-in engineering workflows maintained from one canonical source.",
+    "developerName": "Amet Alvirde",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": [
+      "Use the appropriate Amet skill for this task."
+    ]
+  }
+}

@@ -10,6 +10,12 @@ Generated runtime files are allowed when a harness needs a native format. They
 must be rendered from canonical content and harness metadata, and must not
 become a second editable source.
 
+The Codex plugin's required flat `skills/` tree is also generated output.
+`harness/codex/build-plugin` projects every canonical skill and supporting file,
+removes only the Claude-only invocation flag where Codex policy replaces it,
+marks ownership, refuses foreign paths, and detects stale output with
+`--check`. Files under `plugins/skills/skills/` are never edited directly.
+
 ## Capability status
 
 The status words describe the mechanism, not a claim that planned work already
@@ -24,24 +30,29 @@ exists:
 
 The parenthetical text records implementation state or evidence still needed.
 
-| Capability | Claude Code | OpenCode | Pi |
-| --- | --- | --- | --- |
-| Model-invoked skills | native | native | unsupported (deferred) |
-| Human-only skill entry | native (`disable-model-invocation`) | adapted (rendered command plus native skill deny) | unsupported (deferred) |
-| Skill-triggered tier switch | native | degraded (active agent tier is inherited) | unsupported (deferred) |
-| Pre-tool veto | native hook | adapted (shell-backed plugin throw) | unsupported (veto spike deferred) |
-| Terminal session close | native `SessionEnd` | unsupported (no terminal event) | unsupported (deferred) |
-| Lazy daylog minting and activity | native hooks | adapted (successful native completion events) | unsupported (deferred) |
-| Persistent persona boot | native command | adapted (startup agent selection; command binding lasts one turn) | unsupported (deferred) |
-| Voice loading | native global import | adapted (config `instructions`, verified) | unsupported (deferred) |
-| Global and project skill scopes | native | native | unsupported (deferred) |
-| Positional command arguments | native `$ARGUMENTS` | native `$ARGUMENTS` | unsupported (deferred) |
-| Native subagents | native | native | unsupported (deferred) |
+| Capability | Claude Code | OpenCode | Codex | Pi |
+| --- | --- | --- | --- | --- |
+| Model-invoked skills | native | native | native | unsupported (deferred) |
+| Human-only skill entry | native (`disable-model-invocation`) | adapted (rendered command plus native skill deny) | native (`allow_implicit_invocation: false`) | unsupported (deferred) |
+| Skill-triggered tier switch | native | degraded (active agent tier is inherited) | degraded (active agent tier is inherited) | unsupported (deferred) |
+| Pre-tool veto | native hook | adapted (shell-backed plugin throw) | unsupported | unsupported (veto spike deferred) |
+| Terminal session close | native `SessionEnd` | unsupported (no terminal event) | unsupported | unsupported (deferred) |
+| Lazy daylog minting and activity | native hooks | adapted (successful native completion events) | unsupported | unsupported (deferred) |
+| Persistent persona boot | native command | adapted (startup agent selection; command binding lasts one turn) | degraded (spawnable custom agent, not primary boot) | unsupported (deferred) |
+| Voice loading | native global import | adapted (config `instructions`, verified) | unsupported | unsupported (deferred) |
+| Global and project skill scopes | native | native | native through wiring; degraded in plugin installs | unsupported (deferred) |
+| Positional command arguments | native `$ARGUMENTS` | native `$ARGUMENTS` | unsupported (no adapters) | unsupported (deferred) |
+| Native subagents | native | native | native | unsupported (deferred) |
 
 OpenCode facts in this table were verified against CLI `1.18.22`. Re-test them
 when the supported CLI version changes. OpenCode recognizes Agent Skill
 `name`, `description`, `license`, `compatibility`, and `metadata` fields. It
 ignores Claude Code's invocation and tier fields.
+
+Codex behavior targets CLI `0.151.0` and the ChatGPT desktop app documentation
+current on 2026-08-30. Codex reads symlinked skills from `~/.agents/skills` and
+repository `.agents/skills`, reads custom-agent TOML from `~/.codex/agents`,
+and reads skill invocation policy from `agents/openai.yaml`.
 
 An authenticated `openai/gpt-5.6-sol` smoke and an explicit model-invoked
 `skill` load passed through the OpenAI profile on 2026-08-24. The native branch
@@ -99,6 +110,9 @@ configuration. They must not pretend Claude fields apply automatically.
 targets. Claude skill frontmatter remains the Claude Code projection and must
 match the corresponding `skillPins` entry. OpenCode uses provider-qualified
 model IDs and variants in its active profile and agent configuration.
+Codex agent renders use unqualified OpenAI model IDs plus
+`model_reasoning_effort`. Codex has no documented skill-level projection for
+Claude's `model` or `effort`, so a loaded skill inherits its active agent tier.
 
 A tier has a lifetime:
 
@@ -121,9 +135,10 @@ not equivalent per-skill tiering. Do not replace the native skill tool until
 live use shows that degradation is unacceptable.
 
 `skillPins.<name>.default` is the native skill's fixed tier.
-`skillPins.<name>.retry` is valid only when both harnesses expose an explicit
-retry command that consumes it. The command copies the canonical skill body
-without invoking native skill loading, which would restore the default pin.
+`skillPins.<name>.retry` drives only harnesses that expose an explicit retry
+command. The command copies the canonical skill body without invoking native
+skill loading, which would restore the default pin. Codex retains the semantic
+mapping but has no retry command adapter.
 
 `harness/opencode/openai` is the tested profile selector. It loads the base with
 `OPENCODE_CONFIG` and injects the OpenAI profile through
@@ -150,6 +165,12 @@ the matching harness. `harness/wire` resolves the model target through
 `models.json` and renders each runtime agent. It replaces only an old managed
 symlink or a file carrying its generated marker. Rendered files are installed
 output, not editable sources.
+
+Codex renders the same six personas as `~/.codex/agents/*.toml`. Each file has
+`name`, `description`, `developer_instructions`, `model`, and
+`model_reasoning_effort`, plus a comment managed marker. Codex custom agents
+inherit parent permissions by default; the personas' role text does not become
+a granular native tool permission boundary.
 
 OpenCode exposes exactly four dialogue-bound skill adapters. `/standup` and
 `/hotwash` are global. `/codebase-map` and `/codebase-grill` are project-scoped.
@@ -278,13 +299,14 @@ reach. Command renders support dry-run, carry a managed marker, replace only
 managed output, refuse foreign files and symlinks, and report unchanged output
 as idempotent.
 
-Both active harness manifests expose canonical `engineering/` skills through
-selectable project links. Claude Code links them under
-`<repo>/.claude/skills/`; OpenCode links them under
-`<repo>/.opencode/skills/`. Every link targets `engineering/<skill>` directly.
-The same `--skill` selectors can be repeated for each harness. Dry-run,
-idempotence, unmanaged scanning, and foreign-path refusal are shared executor
-behavior.
+All three active harness manifests expose canonical `engineering/` skills
+through selectable project links. Claude Code links them under
+`<repo>/.claude/skills/`, OpenCode under `<repo>/.opencode/skills/`, and Codex
+under `<repo>/.agents/skills/`. Every link targets `engineering/<skill>`
+directly. The same `--skill` selectors can be repeated for each harness.
+Dry-run, idempotence, unmanaged scanning, and foreign-path refusal are shared
+executor behavior. Codex also links `global/` under `~/.agents/skills/` and
+renders managed custom-agent TOML under `~/.codex/agents/`.
 
 The OpenCode manifest links only `harness/opencode/plugins/main-branch-guard.ts`
 and `harness/opencode/plugins/daylog-trigger.ts` into the global plugin

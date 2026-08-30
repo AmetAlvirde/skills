@@ -1,0 +1,20 @@
+{
+  "name": "amet-skills",
+  "interface": {
+    "displayName": "Amet's Skills"
+  },
+  "plugins": [
+    {
+      "name": "skills",
+      "source": {
+        "source": "local",
+        "path": "./plugins/skills"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

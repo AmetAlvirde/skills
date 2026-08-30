@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "harness": "codex",
+  "agents": {
+    "ennio": {},
+    "bit": {},
+    "vitruv": {},
+    "tux": {},
+    "linn": {},
+    "radar": {}
+  }
+}

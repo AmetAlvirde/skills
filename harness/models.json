@@ -44,6 +44,22 @@
           "variant": "xhigh"
         }
       }
+    },
+    "codex/openai": {
+      "targets": {
+        "gpt-medium": {
+          "model": "gpt-5.6-sol",
+          "model_reasoning_effort": "medium"
+        },
+        "gpt-high": {
+          "model": "gpt-5.6-sol",
+          "model_reasoning_effort": "high"
+        },
+        "gpt-xhigh": {
+          "model": "gpt-5.6-sol",
+          "model_reasoning_effort": "xhigh"
+        }
+      }
     }
   },
   "sessionDefaults": {
@@ -54,123 +70,150 @@
     "opencode": {
       "target": "opencode/openai:gpt-medium",
       "profile": "openai"
+    },
+    "codex": {
+      "target": "codex/openai:gpt-medium"
     }
   },
   "agents": {
     "ennio": {
       "default": {
         "claude-code": "claude-code/anthropic:opus-high",
-        "opencode": "opencode/openai:gpt-high"
+        "opencode": "opencode/openai:gpt-high",
+        "codex": "codex/openai:gpt-high"
       },
       "escalation": {
         "claude-code": "claude-code/anthropic:opus-xhigh",
-        "opencode": "opencode/openai:gpt-xhigh"
+        "opencode": "opencode/openai:gpt-xhigh",
+        "codex": "codex/openai:gpt-xhigh"
       }
     },
     "bit": {
       "default": {
         "claude-code": "claude-code/anthropic:opus-medium",
-        "opencode": "opencode/openai:gpt-medium"
+        "opencode": "opencode/openai:gpt-medium",
+        "codex": "codex/openai:gpt-medium"
       },
       "escalation": {
         "claude-code": "claude-code/anthropic:opus-high",
-        "opencode": "opencode/openai:gpt-high"
+        "opencode": "opencode/openai:gpt-high",
+        "codex": "codex/openai:gpt-high"
       }
     },
     "vitruv": {
       "default": {
         "claude-code": "claude-code/anthropic:opus-high",
-        "opencode": "opencode/openai:gpt-high"
+        "opencode": "opencode/openai:gpt-high",
+        "codex": "codex/openai:gpt-high"
       },
       "escalation": {
         "claude-code": "claude-code/anthropic:opus-xhigh",
-        "opencode": "opencode/openai:gpt-xhigh"
+        "opencode": "opencode/openai:gpt-xhigh",
+        "codex": "codex/openai:gpt-xhigh"
       }
     },
     "tux": {
       "default": {
         "claude-code": "claude-code/anthropic:sonnet-medium",
-        "opencode": "opencode/openai:gpt-medium"
+        "opencode": "opencode/openai:gpt-medium",
+        "codex": "codex/openai:gpt-medium"
       },
       "escalation": {
         "claude-code": "claude-code/anthropic:opus-medium",
-        "opencode": "opencode/openai:gpt-high"
+        "opencode": "opencode/openai:gpt-high",
+        "codex": "codex/openai:gpt-high"
       }
     },
     "linn": {
       "default": {
         "claude-code": "claude-code/anthropic:sonnet-high",
-        "opencode": "opencode/openai:gpt-medium"
+        "opencode": "opencode/openai:gpt-medium",
+        "codex": "codex/openai:gpt-medium"
       },
       "escalation": {
         "claude-code": "claude-code/anthropic:opus-medium",
-        "opencode": "opencode/openai:gpt-high"
+        "opencode": "opencode/openai:gpt-high",
+        "codex": "codex/openai:gpt-high"
       }
     },
     "radar": {
       "default": {
         "claude-code": "claude-code/anthropic:opus-medium",
-        "opencode": "opencode/openai:gpt-medium"
+        "opencode": "opencode/openai:gpt-medium",
+        "codex": "codex/openai:gpt-medium"
       },
       "escalation": {
         "claude-code": "claude-code/anthropic:opus-high",
-        "opencode": "opencode/openai:gpt-high"
+        "opencode": "opencode/openai:gpt-high",
+        "codex": "codex/openai:gpt-high"
       }
     }
   },
   "skillPins": {
     "aar": {
       "claude-code": "claude-code/anthropic:opus-medium",
-      "opencode": "opencode/openai:gpt-medium"
+      "opencode": "opencode/openai:gpt-medium",
+      "codex": "codex/openai:gpt-medium"
     },
     "adr": {
       "claude-code": "claude-code/anthropic:opus-high",
-      "opencode": "opencode/openai:gpt-high"
+      "opencode": "opencode/openai:gpt-high",
+      "codex": "codex/openai:gpt-high"
     },
     "audit": {
       "claude-code": "claude-code/anthropic:opus-xhigh",
-      "opencode": "opencode/openai:gpt-xhigh"
+      "opencode": "opencode/openai:gpt-xhigh",
+      "codex": "codex/openai:gpt-xhigh"
     },
     "codebase-grill": {
       "claude-code": "claude-code/anthropic:opus-high",
-      "opencode": "opencode/openai:gpt-high"
+      "opencode": "opencode/openai:gpt-high",
+      "codex": "codex/openai:gpt-high"
     },
     "codebase-map": {
       "claude-code": "claude-code/anthropic:opus-high",
-      "opencode": "opencode/openai:gpt-high"
+      "opencode": "opencode/openai:gpt-high",
+      "codex": "codex/openai:gpt-high"
     },
     "codebase-review": {
       "default": {
         "claude-code": "claude-code/anthropic:opus-high",
-        "opencode": "opencode/openai:gpt-high"
+        "opencode": "opencode/openai:gpt-high",
+        "codex": "codex/openai:gpt-high"
       },
       "retry": {
         "claude-code": "claude-code/anthropic:opus-xhigh",
-        "opencode": "opencode/openai:gpt-xhigh"
+        "opencode": "opencode/openai:gpt-xhigh",
+        "codex": "codex/openai:gpt-xhigh"
       }
     },
     "pr-review": {
       "default": {
         "claude-code": "claude-code/anthropic:opus-high",
-        "opencode": "opencode/openai:gpt-high"
+        "opencode": "opencode/openai:gpt-high",
+        "codex": "codex/openai:gpt-high"
       },
       "retry": {
         "claude-code": "claude-code/anthropic:opus-xhigh",
-        "opencode": "opencode/openai:gpt-xhigh"
+        "opencode": "opencode/openai:gpt-xhigh",
+        "codex": "codex/openai:gpt-xhigh"
       }
     },
     "refactor": {
       "default": {
         "claude-code": "claude-code/anthropic:opus-high",
-        "opencode": "opencode/openai:gpt-high"
+        "opencode": "opencode/openai:gpt-high",
+        "codex": "codex/openai:gpt-high"
       },
       "retry": {
         "claude-code": "claude-code/anthropic:opus-xhigh",
-        "opencode": "opencode/openai:gpt-xhigh"
+        "opencode": "opencode/openai:gpt-xhigh",
+        "codex": "codex/openai:gpt-xhigh"
       }
     }
   },
   "knownDegradations": {
-    "opencodeNaturalLanguageSkillInvocation": "The skill inherits the active agent target because OpenCode cannot change model or variant during the loading turn."
+    "opencodeNaturalLanguageSkillInvocation": "The skill inherits the active agent target because OpenCode cannot change model or variant during the loading turn.",
+    "codexSkillInvocationTier": "Codex has no documented skill-level model or effort metadata, so a loaded skill inherits the active agent target."
   }
 }

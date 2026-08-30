@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)
+DEST="$ROOT/plugins/skills/skills"
+MODE=check
+CHANGES=0
+
+usage() {
+  printf '%s\n' 'Usage: harness/codex/build-plugin [--check | --apply]'
+}
+
+die() {
+  printf 'build-plugin: %s\n' "$1" >&2
+  exit 1
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --check) MODE=check ;;
+    --apply) MODE=apply ;;
+    -h|--help) usage; exit 0 ;;
+    *) die "unknown argument: $1" ;;
+  esac
+  shift
+done
+
+is_dialogue_bound() {
+  grep -Fqx 'disable-model-invocation: true' "$1/SKILL.md"
+}
+
+generate_skill() {
+  local source=$1 destination=$2 temporary=$3 current marker
+  marker=${source#"$ROOT"/}
+  cp -R "$source/." "$temporary/"
+  printf '%s\n' "$marker" >"$temporary/.codex-generated"
+  if is_dialogue_bound "$source"; then
+    awk '!/^disable-model-invocation: true$/' "$source/SKILL.md" \
+      >"$temporary/SKILL.md"
+  fi
+
+  if [ -L "$destination" ]; then
+    current=$(readlink "$destination")
+    case "$(cd "$(dirname "$destination")" && cd "$(dirname "$current")" && pwd -P)/$(basename "$current")" in
+      "$source") ;;
+      *) die "foreign plugin path: $destination -> $current" ;;
+    esac
+  elif [ -e "$destination" ]; then
+    [ -f "$destination/.codex-generated" ] &&
+      [ "$(<"$destination/.codex-generated")" = "$marker" ] ||
+      die "foreign plugin path: $destination"
+  fi
+
+  if [ ! -L "$destination" ] && [ -d "$destination" ] &&
+    diff -qr "$temporary" "$destination" >/dev/null; then
+    return
+  fi
+
+  printf '  generate  %s <- %s\n' "$destination" "$source"
+  CHANGES=$((CHANGES + 1))
+  if [ "$MODE" = apply ]; then
+    if [ -L "$destination" ]; then
+      unlink "$destination"
+    elif [ -d "$destination" ]; then
+      rm -rf "$destination"
+    fi
+    mkdir -p "$destination"
+    cp -R "$temporary/." "$destination/"
+  fi
+}
+
+[ -d "$DEST" ] || {
+  [ "$MODE" = apply ] || die "plugin skill directory missing: $DEST"
+  mkdir -p "$DEST"
+}
+temporary=$(mktemp -d "${TMPDIR:-/tmp}/skills-codex-plugin.XXXXXX")
+trap 'rm -rf "$temporary"' EXIT
+
+for source in "$ROOT"/global/* "$ROOT"/engineering/*; do
+  [ -d "$source" ] || continue
+  name=$(basename "$source")
+  destination="$DEST/$name"
+  mkdir -p "$temporary/$name"
+  generate_skill "$source" "$destination" "$temporary/$name"
+done
+
+for destination in "$DEST"/*; do
+  [ -e "$destination" ] || continue
+  name=$(basename "$destination")
+  if [ -d "$ROOT/global/$name" ] || [ -d "$ROOT/engineering/$name" ]; then
+    continue
+  fi
+  [ -f "$destination/.codex-generated" ] ||
+    die "foreign plugin path: $destination"
+  printf '  remove    %s (stale generated projection)\n' "$destination"
+  CHANGES=$((CHANGES + 1))
+  [ "$MODE" = apply ] && rm -rf "$destination"
+done
+
+if [ "$CHANGES" -gt 0 ] && [ "$MODE" = check ]; then
+  die "$CHANGES generated plugin projection(s) are stale; run with --apply"
+fi
+printf 'summary: %s generated change(s) [%s]\n' "$CHANGES" "$MODE"

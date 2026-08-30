@@ -1,0 +1,5 @@
+interface:
+  display_name: Codebase Map
+  short_description: Map a codebase through guided divergence.
+policy:
+  allow_implicit_invocation: false

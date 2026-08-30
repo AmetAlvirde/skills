@@ -24,7 +24,8 @@ skill.
   Fable is selected only explicitly. Claude-native skill frontmatter and
   rendered agent frontmatter pin exact model ids: `claude-opus-5`,
   `claude-sonnet-5`. Never a bare alias, never a date suffix. Cross-harness
-  targets live in `harness/models.json`; the per-agent / per-skill matrix is in
+  targets, including Codex custom-agent targets, live in `harness/models.json`;
+  the per-agent / per-skill matrix is in
   [`README.md` §Tiering](./README.md#tiering).
 - **Router MUST NOT LIE.** The dispatch map of every user-reachable skill lives
   in [`README.md` §Router](./README.md#router). When you add, rename, remove, or
