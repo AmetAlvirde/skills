@@ -14,7 +14,7 @@ increment, narrow, complete, demoable or verifiable on its own, independently
 reviewable, tied to a spec requirement. The spec is the source of truth; don't
 mine scratch notes.
 
-Run it as **@vitruv** (Opus 5 high, held across the preview→approve iteration).
+Run it as **@vitruv** (Opus 5.5 high, held across the preview→approve iteration).
 Slicing is the judgment that makes the build reviewable. Vitruv stops at
 approved slices and hands the build back; `implement` is a separate call the
 human makes.

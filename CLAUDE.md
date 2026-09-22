@@ -20,9 +20,9 @@ skill.
 - **Naming.** `<qualifier>-<primitive>`. The bare primitive is the general case;
   a qualifier specializes it (`grill` → `codebase-grill`). Qualify to dodge
   built-ins (`/code-review`, `/review`).
-- **Tiering ceiling.** Opus 5 is the Claude default and xhigh is its ceiling;
+- **Tiering ceiling.** Opus 5.5 is the Claude default and xhigh is its ceiling;
   Fable is selected only explicitly. Claude-native skill frontmatter and
-  rendered agent frontmatter pin exact model ids: `claude-opus-5`,
+  rendered agent frontmatter pin exact model ids: `claude-opus-5-5`,
   `claude-sonnet-5`. Never a bare alias, never a date suffix. Cross-harness
   targets live in `harness/models.json`; the per-agent / per-skill matrix is in
   [`README.md` §Tiering](./README.md#tiering).

@@ -5,10 +5,10 @@
     "sessionUrl": false
   },
   "includeCoAuthoredBy": false,
-  "model": "claude-opus-5[1m]",
+  "model": "claude-opus-5-5[1m]",
   "effortLevel": "medium",
   "modelSettings": {
-    "claude-opus-5": {
+    "claude-opus-5-5": {
       "effortLevel": "high"
     },
     "claude-fable-5": {

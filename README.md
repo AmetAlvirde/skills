@@ -261,7 +261,7 @@ Single-turn disciplines pin `model`/`effort` in Claude-native **skill**
 frontmatter (resets next turn, which is correct for one-shot methods).
 Multi-turn/agentic work tiers via the **agent**, which holds the tier across the
 loop. The semantic assignments and each harness/provider target live in
-[`harness/models.json`](./harness/models.json). Claude defaults to Opus 5 and
+[`harness/models.json`](./harness/models.json). Claude defaults to Opus 5.5 and
 its ceiling is xhigh; Fable is an explicit user selection. Claude frontmatter
 pins exact model ids: canonical skill frontmatter carries skill pins, and
 rendered agent frontmatter carries persona pins. Never use a bare alias like
@@ -275,25 +275,25 @@ define-and-approve is another.
 
 Agent tiers (default → escalation when a turn is genuinely stuck):
 
-| Agent     | Role               | Default       | Escalation   |
-| --------- | ------------------ | ------------- | ------------ |
-| `@ennio`  | orchestrate        | Opus 5 high   | Opus 5 xhigh |
-| `@bit`    | implement/refactor | Opus 5 medium | Opus 5 high  |
-| `@vitruv` | spec/issues        | Opus 5 high   | Opus 5 xhigh |
-| `@tux`    | git                | Sonnet 5 med  | Opus 5 med   |
-| `@linn`   | docs / vault       | Sonnet 5 high | Opus 5 med   |
-| `@radar`  | state / briefings  | Opus 5 medium | Opus 5 high  |
+| Agent     | Role               | Default         | Escalation     |
+| --------- | ------------------ | --------------- | -------------- |
+| `@ennio`  | orchestrate        | Opus 5.5 high   | Opus 5.5 xhigh |
+| `@bit`    | implement/refactor | Opus 5.5 medium | Opus 5.5 high  |
+| `@vitruv` | spec/issues        | Opus 5.5 high   | Opus 5.5 xhigh |
+| `@tux`    | git                | Sonnet 5 med    | Opus 5.5 med   |
+| `@linn`   | docs / vault       | Sonnet 5 high   | Opus 5.5 med   |
+| `@radar`  | state / briefings  | Opus 5.5 medium | Opus 5.5 high  |
 
 Single-turn skills self-tier: `codebase-map`, `codebase-grill`, `refactor`,
-`adr`, `codebase-review`, `pr-review` = Opus 5 high; `audit` = Opus 5 xhigh;
-`aar` = Opus 5 medium. Multi-turn skills carry **no** skill pin and tier through
+`adr`, `codebase-review`, `pr-review` = Opus 5.5 high; `audit` = Opus 5.5 xhigh;
+`aar` = Opus 5.5 medium. Multi-turn skills carry **no** skill pin and tier through
 the agent that owns them: `prototype` and `implement` run as **@bit**, `spec`
 and `issues` as **@vitruv**, `update-docs` as **@linn**; the `review`,
 `design`, and `unslop` disciplines inherit the tier of the skill that composes
 them.
 
 `codebase-review`, `pr-review`, and `refactor` each have one explicit retry
-target: Opus 5 xhigh / GPT xhigh. A high pass may recommend its
+target: Opus 5.5 xhigh / GPT xhigh. A high pass may recommend its
 `/<skill>-retry <reason>` command only when an important finding, seam, or blast
 radius remains unverified. The command starts a new turn, carries the reason,
 and cannot retry itself. `retry` is distinct from agent `escalation`, which

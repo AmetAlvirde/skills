@@ -13,7 +13,7 @@ One reliable slice at a time, not the whole spec. Reliable means tested at the
 seam and behavior-preserving everywhere else (seam and interface per the
 `design` discipline, where the interface is the test surface).
 
-Multi-turn build loop. Run it as **@bit** (Opus 5 medium holds the tier); the
+Multi-turn build loop. Run it as **@bit** (Opus 5.5 medium holds the tier); the
 skill frames the slice, @bit writes red→green and runs the cadence, @tux
 commits.
 

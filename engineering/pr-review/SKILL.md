@@ -4,7 +4,7 @@ description: >-
   Review a GitHub pull request by composing the `review` discipline against a
   PR's diff for correctness bugs and cleanups. Qualifies to dodge the built-in
   /review. Use on "review PR #123", "review this pull request".
-model: claude-opus-5
+model: claude-opus-5-5
 effort: high
 ---
 
