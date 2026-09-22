@@ -5,7 +5,7 @@ description: >-
   uncommitted / branch changes for correctness bugs and cleanups. Qualifies to
   dodge the built-in /code-review. Use on "review my changes", "review the diff
   before I push".
-model: claude-opus-5
+model: claude-opus-5-5
 effort: high
 ---
 

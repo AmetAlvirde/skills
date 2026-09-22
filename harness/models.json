@@ -4,15 +4,15 @@
     "claude-code/anthropic": {
       "targets": {
         "opus-medium": {
-          "model": "claude-opus-5",
+          "model": "claude-opus-5-5",
           "effort": "medium"
         },
         "opus-high": {
-          "model": "claude-opus-5",
+          "model": "claude-opus-5-5",
           "effort": "high"
         },
         "opus-xhigh": {
-          "model": "claude-opus-5",
+          "model": "claude-opus-5-5",
           "effort": "xhigh"
         },
         "fable-high": {
@@ -49,7 +49,7 @@
   "sessionDefaults": {
     "claude-code": {
       "target": "claude-code/anthropic:opus-high",
-      "selection": "claude-opus-5[1m]"
+      "selection": "claude-opus-5-5[1m]"
     },
     "opencode": {
       "target": "opencode/openai:gpt-medium",

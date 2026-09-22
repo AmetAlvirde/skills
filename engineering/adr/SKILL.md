@@ -5,7 +5,7 @@ description: >-
   context, and a real trade-off. Do this sparingly. Also loads and updates ADRs
   and the index. Use on "write an ADR", "record this decision", or when
   `refactor` / `audit` surfaces a qualifying decision.
-model: claude-opus-5
+model: claude-opus-5-5
 effort: high
 ---
 
@@ -18,7 +18,7 @@ not qualify.
 
 Run it as **@vitruv**. An ADR is definition work, the same as `spec` and
 `issues`: a record of what must be true, written for agents who will have none
-of this context. The definer holds Opus 5 high, and what the tier buys here is
+of this context. The definer holds Opus 5.5 high, and what the tier buys here is
 the three-test gate itself: whether the decision qualifies, and why. Declining
 is a finished run. Git lands via @tux.
 

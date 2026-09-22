@@ -5,7 +5,7 @@ description: >-
   implementation accident, and state what should become reliable and what to
   discard. Use on "aar", "what did the prototype teach us", after `prototype`
   and before `audit`. Also recovers prototype-first work that skipped the grill.
-model: claude-opus-5
+model: claude-opus-5-5
 effort: medium
 ---
 
@@ -15,7 +15,7 @@ Synthesize the learning, don't defend the code. The prototype was a question;
 the AAR is the answer: what's validated, what becomes reliable, what to throw
 away.
 
-Run at Opus 5 medium. This is synthesis from evidence you already hold.
+Run at Opus 5.5 medium. This is synthesis from evidence you already hold.
 
 1. **Draft from evidence first.** Read the source map/grill, the prototype
    note, and the prototype diff (resolve through `HEAD.md`). Ask focused
