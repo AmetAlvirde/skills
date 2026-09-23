@@ -12,8 +12,8 @@ command -v opencode >/dev/null 2>&1 || {
 }
 
 version=$(opencode --version)
-[ "$version" = 1.18.22 ] || {
-  printf 'openai: expected opencode 1.18.22, found %s\n' "$version" >&2
+[ "$version" = 1.18.29 ] || {
+  printf 'openai: expected opencode 1.18.29, found %s\n' "$version" >&2
   exit 1
 }
 

@@ -146,8 +146,8 @@ project skills.
 
 ### OpenCode GPT smoke
 
-Pi is deferred. The current MVP path is OpenCode `1.18.22` on
-`openai/gpt-5.6-sol`:
+Pi is deferred. The current MVP path is OpenCode `1.18.29` on
+`openai/gpt-6-sol`:
 
 ```sh
 ~/Dev/skills/harness/wire --harness opencode --apply
@@ -267,6 +267,10 @@ pins exact model ids: canonical skill frontmatter carries skill pins, and
 rendered agent frontmatter carries persona pins. Never use a bare alias like
 `sonnet`, and never append a date suffix. The Claude session default in the
 settings baseline resolves through the same model map.
+
+OpenAI agent, skill, and retry targets use `gpt-6-sol` with their existing
+reasoning levels. The OpenCode profile uses `gpt-6-luna` for `small_model`
+helper tasks. Model IDs follow the [OpenAI model catalog](https://developers.openai.com/api/docs/models).
 
 A pin's **lifetime** is the deciding factor, not the skill's size: a skill
 override resets at the next user prompt, so any loop that iterates with the

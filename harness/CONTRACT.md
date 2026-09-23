@@ -38,8 +38,10 @@ The parenthetical text records implementation state or evidence still needed.
 | Positional command arguments | native `$ARGUMENTS` | native `$ARGUMENTS` | unsupported (deferred) |
 | Native subagents | native | native | unsupported (deferred) |
 
-OpenCode facts in this table were verified against CLI `1.18.22`. Re-test them
-when the supported CLI version changes. OpenCode recognizes Agent Skill
+OpenCode facts in this table were verified against CLI `1.18.22`. The wiring
+and plugin suites were rechecked with CLI `1.18.29` on 2026-09-22.
+The OpenAI profile lists GPT-6 Sol, Luna, and Astra with this CLI version.
+OpenCode recognizes Agent Skill
 `name`, `description`, `license`, `compatibility`, and `metadata` fields. It
 ignores Claude Code's invocation and tier fields.
 
@@ -49,7 +51,7 @@ guard adapter also passed a real refusal smoke in a throwaway repository. The
 daylog adapter passed a real smoke under an isolated HOME and notes vault: a
 successful read-only Bash call left activity unminted, while a successful
 authoring call minted the daylog and recorded its native session ID. The CLI and
-`@opencode-ai/plugin` SDK are both pinned to `1.18.22`.
+`@opencode-ai/plugin` SDK are both pinned to `1.18.29`.
 
 ## Required outcomes
 
