@@ -285,7 +285,7 @@ Agent tiers (default → escalation when a turn is genuinely stuck):
 | `@bit`    | implement/refactor | Opus 5.5 medium | Opus 5.5 high  |
 | `@vitruv` | spec/issues        | Opus 5.5 high   | Opus 5.5 xhigh |
 | `@tux`    | git                | Sonnet 5 med    | Opus 5.5 med   |
-| `@linn`   | docs / vault       | Sonnet 5 high   | Opus 5.5 med   |
+| `@linn`   | docs / vault       | Opus 5.5 medium | Opus 5.5 high  |
 | `@radar`  | state / briefings  | Opus 5.5 medium | Opus 5.5 high  |
 
 Single-turn skills self-tier: `codebase-map`, `codebase-grill`, `refactor`,

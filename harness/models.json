@@ -99,11 +99,11 @@
     },
     "linn": {
       "default": {
-        "claude-code": "claude-code/anthropic:sonnet-high",
+        "claude-code": "claude-code/anthropic:opus-medium",
         "opencode": "opencode/openai:gpt-medium"
       },
       "escalation": {
-        "claude-code": "claude-code/anthropic:opus-medium",
+        "claude-code": "claude-code/anthropic:opus-high",
         "opencode": "opencode/openai:gpt-high"
       }
     },
