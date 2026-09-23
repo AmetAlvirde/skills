@@ -420,7 +420,9 @@ if command -v opencode >/dev/null 2>&1; then
     OPENCODE_CONFIG_CONTENT="$profile" HOME="$HOME_DIR" \
     XDG_CONFIG_HOME="$HOME_DIR/.config" opencode debug config) >"$W/opencode-config.json"
   ok 'OpenCode accepts rendered agents and commands' jq -e '
-    .agent.bit.model == "openai/gpt-5.6-sol" and
+    .model == "openai/gpt-6-sol" and
+    .small_model == "openai/gpt-6-luna" and
+    .agent.bit.model == "openai/gpt-6-sol" and
     .agent.tux.permission.edit["*"] == "deny" and
     .command.standup.agent == "radar" and
     .command.hotwash.agent == "radar" and
@@ -428,10 +430,10 @@ if command -v opencode >/dev/null 2>&1; then
     (.command["codebase-grill"] | has("agent") | not) and
     ([.command.standup, .command.hotwash, .command["codebase-map"],
       .command["codebase-grill"]] |
-      all(.model == "openai/gpt-5.6-sol" and (.variant == "medium" or .variant == "high")))
+      all(.model == "openai/gpt-6-sol" and (.variant == "medium" or .variant == "high")))
       and ([.command["codebase-review-retry"], .command["pr-review-retry"],
         .command["refactor-retry"]] |
-        all((has("agent") | not) and .model == "openai/gpt-5.6-sol" and
+        all((has("agent") | not) and .model == "openai/gpt-6-sol" and
           .variant == "xhigh"))
   ' \
     "$W/opencode-config.json"

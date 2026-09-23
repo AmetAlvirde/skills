@@ -32,15 +32,15 @@
     "opencode/openai": {
       "targets": {
         "gpt-medium": {
-          "model": "openai/gpt-5.6-sol",
+          "model": "openai/gpt-6-sol",
           "variant": "medium"
         },
         "gpt-high": {
-          "model": "openai/gpt-5.6-sol",
+          "model": "openai/gpt-6-sol",
           "variant": "high"
         },
         "gpt-xhigh": {
-          "model": "openai/gpt-5.6-sol",
+          "model": "openai/gpt-6-sol",
           "variant": "xhigh"
         }
       }

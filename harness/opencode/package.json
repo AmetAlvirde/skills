@@ -6,9 +6,9 @@
     "test": "bun test tests"
   },
   "engines": {
-    "opencode": "1.18.22"
+    "opencode": "1.18.29"
   },
   "dependencies": {
-    "@opencode-ai/plugin": "1.18.22"
+    "@opencode-ai/plugin": "1.18.29"
   }
 }
